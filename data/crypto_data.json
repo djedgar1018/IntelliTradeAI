@@ -1,8 +1,14 @@
 {
-    "metadata": {
-        "last_updated": null,
-        "source": "CoinMarketCap API",
-        "symbols": []
-    },
-    "data": {}
+  "metadata": {
+    "last_updated": "2025-07-17T21:31:25.570922",
+    "source": "CoinMarketCap API",
+    "symbols": [
+      "AAPL",
+      "GOOGL",
+      "MSFT",
+      "TSLA",
+      "AMZN"
+    ]
+  },
+  "data": {}
 }

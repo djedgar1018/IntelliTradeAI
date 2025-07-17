@@ -376,21 +376,21 @@ class TechnicalIndicators:
         summary = {}
         
         # RSI
-        if not pd.isna(latest['rsi']):
+        if 'rsi' in latest and not pd.isna(latest['rsi']):
             summary['RSI'] = {
                 'value': latest['rsi'],
                 'signal': 'Oversold' if latest['rsi'] < 30 else 'Overbought' if latest['rsi'] > 70 else 'Neutral'
             }
         
         # MACD
-        if not pd.isna(latest['macd']) and not pd.isna(latest['macd_signal']):
+        if 'macd' in latest and 'macd_signal' in latest and not pd.isna(latest['macd']) and not pd.isna(latest['macd_signal']):
             summary['MACD'] = {
                 'value': latest['macd'],
                 'signal': 'Bullish' if latest['macd'] > latest['macd_signal'] else 'Bearish'
             }
         
         # Bollinger Bands
-        if not pd.isna(latest['bb_upper']) and not pd.isna(latest['bb_lower']):
+        if 'bb_upper' in latest and 'bb_lower' in latest and not pd.isna(latest['bb_upper']) and not pd.isna(latest['bb_lower']):
             bb_position = (latest['close'] - latest['bb_lower']) / (latest['bb_upper'] - latest['bb_lower'])
             summary['Bollinger Bands'] = {
                 'position': bb_position,
@@ -398,13 +398,13 @@ class TechnicalIndicators:
             }
         
         # Moving Averages
-        if not pd.isna(latest['ema_12']) and not pd.isna(latest['ema_26']):
+        if 'ema_12' in latest and 'ema_26' in latest and not pd.isna(latest['ema_12']) and not pd.isna(latest['ema_26']):
             summary['EMA Crossover'] = {
                 'signal': 'Bullish' if latest['ema_12'] > latest['ema_26'] else 'Bearish'
             }
         
         # Volume
-        if not pd.isna(latest['volume_ratio']):
+        if 'volume_ratio' in latest and not pd.isna(latest['volume_ratio']):
             summary['Volume'] = {
                 'ratio': latest['volume_ratio'],
                 'signal': 'High' if latest['volume_ratio'] > 1.5 else 'Low' if latest['volume_ratio'] < 0.5 else 'Normal'

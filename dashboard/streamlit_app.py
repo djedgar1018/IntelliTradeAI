@@ -22,12 +22,8 @@ from utils.data_fetcher import DataFetcher
 from utils.indicators import TechnicalIndicators
 from utils.data_cleaner import DataCleaner
 from utils.explainability import ExplainabilityEngine
-# Try to import LSTM model, use fallback if TensorFlow not available
-try:
-    from models.lstm_model import LSTMPredictor
-    LSTM_AVAILABLE = True
-except ImportError:
-    LSTM_AVAILABLE = False
+# LSTM model temporarily disabled due to TensorFlow compatibility issues
+LSTM_AVAILABLE = False
 from models.random_forest_model import RandomForestPredictor
 from models.xgboost_model import XGBoostPredictor
 from models.model_comparison import ModelComparison

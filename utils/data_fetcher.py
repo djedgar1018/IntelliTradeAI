@@ -313,6 +313,9 @@ class DataFetcher:
     def _is_cache_valid(self, timestamp_str):
         """Check if cached data is still valid"""
         try:
+            if timestamp_str is None:
+                return False
+                
             cached_time = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
             current_time = datetime.now()
             
