@@ -737,19 +737,98 @@ class RobustModelTrainer:
             summary: Dictionary with model summaries
         """
         summary = {
-            'total_models': len(self.trained_models),
+            'total_models': 0,
             'models': {}
         }
         
+        # Check both in-memory models and cached models
+        all_models = {}
+        
+        # Add in-memory models
         for model_key, model_info in self.trained_models.items():
-            summary['models'][model_key] = {
+            all_models[model_key] = {
                 'features': len(model_info['feature_names']),
                 'has_scaler': model_info.get('scaler') is not None,
                 'has_selector': model_info.get('feature_selector') is not None,
                 'algorithm': type(model_info['model']).__name__
             }
         
+        # Check cache directory for saved models
+        if os.path.exists(self.model_cache_dir):
+            for filename in os.listdir(self.model_cache_dir):
+                if filename.endswith('.joblib'):
+                    model_key = filename.replace('.joblib', '')
+                    
+                    # Only add if not already in memory
+                    if model_key not in all_models:
+                        try:
+                            # Load model to get info
+                            model_data = joblib.load(os.path.join(self.model_cache_dir, filename))
+                            all_models[model_key] = {
+                                'features': len(model_data.get('feature_names', [])),
+                                'has_scaler': 'scaler' in model_data,
+                                'has_selector': 'feature_selector' in model_data,
+                                'algorithm': type(model_data['model']).__name__
+                            }
+                        except Exception as e:
+                            print(f"Error loading cached model {filename}: {e}")
+        
+        summary['total_models'] = len(all_models)
+        summary['models'] = all_models
+        
         return summary
+    
+    def make_predictions(self, features, symbol, algorithm='random_forest'):
+        """Make predictions using a trained model"""
+        try:
+            # Load the trained model
+            model_filename = f"{symbol}_{algorithm}.joblib"
+            model_path = os.path.join(os.path.dirname(__file__), 'cache', model_filename)
+            
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"No trained model found: {model_filename}")
+            
+            model_data = joblib.load(model_path)
+            model = model_data['model']
+            scaler = model_data.get('scaler')
+            feature_selector = model_data.get('feature_selector')
+            feature_names = model_data.get('feature_names', [])
+            
+            # Prepare features
+            if len(features) == 0:
+                raise ValueError("No features available for prediction")
+            
+            # Drop target column if present
+            prediction_features = features.drop(['target'], axis=1, errors='ignore')
+            
+            # Ensure we have the right feature names
+            if feature_names:
+                # Reorder/filter features to match training
+                missing_features = set(feature_names) - set(prediction_features.columns)
+                if missing_features:
+                    # Add missing features with zeros
+                    for feature in missing_features:
+                        prediction_features[feature] = 0
+                
+                # Select only the features used in training
+                prediction_features = prediction_features[feature_names]
+            
+            # Apply scaling
+            if scaler:
+                prediction_features = scaler.transform(prediction_features)
+            
+            # Apply feature selection
+            if feature_selector:
+                prediction_features = feature_selector.transform(prediction_features)
+            
+            # Make predictions
+            predictions = model.predict(prediction_features)
+            
+            return predictions
+            
+        except Exception as e:
+            print(f"Prediction error: {e}")
+            return None
 
 
 # Legacy ModelTrainer class for backward compatibility
