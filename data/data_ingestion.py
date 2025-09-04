@@ -49,7 +49,7 @@ class DataIngestion:
                         else:
                             # Fallback to current price data
                             current_data = self._fetch_crypto_current_price(symbol)
-                            if current_data:
+                            if current_data is not None:
                                 crypto_data[symbol] = current_data
                     
                 except Exception as e:
@@ -173,7 +173,8 @@ class DataIngestion:
                         'volume': [quote['volume_24h']]
                     }
                     
-                    df = pd.DataFrame(current_data, index=[datetime.now()])
+                    df = pd.DataFrame(current_data)
+                    df.index = [datetime.now()]
                     return df
             
             return None
