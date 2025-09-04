@@ -11,11 +11,14 @@ import joblib
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
+from datetime import datetime, timedelta
 
 from data.data_ingestion import DataIngestion
 from models.model_comparison import compare_models
 from backtest.features.feature_engineering import build_features
 from backtest.backtesting_engine import simulate_long_flat, proba_to_signal
+from ai_advisor.trading_intelligence import TradingIntelligence
+from app.ai_analysis_tab import render_ai_analysis_tab, render_model_training_tab, render_backtest_tab
 
 EXPERIMENTS_DIR = os.getenv("EXPERIMENTS_DIR", "experiments")
 os.makedirs(EXPERIMENTS_DIR, exist_ok=True)
@@ -42,15 +45,50 @@ def save_compare_record(symbol, scoreboard_df, best_model, best_path):
         json.dump(rec, f, indent=2)
     return out
 
-st.set_page_config(page_title="IntelliTradeAI", layout="wide")
-st.title("📈 IntelliTradeAI Dashboard")
+st.set_page_config(page_title="🤖 AI Trading Advisor", layout="wide")
+st.title("🤖 AI Trading Advisor")
+st.caption("Your intelligent assistant for data-driven trading decisions")
+
+# Initialize AI advisor
+if 'ai_advisor' not in st.session_state:
+    st.session_state.ai_advisor = TradingIntelligence()
+
+# Welcome message
+with st.container():
+    st.markdown("""
+    ### 👋 Welcome to your AI Trading Advisor!
+    
+    I analyze market data using advanced AI models and provide clear **BUY**, **SELL**, **HOLD**, or **DCA** recommendations with detailed explanations.
+    
+    📊 **What I do for you:**
+    - Analyze price trends and technical indicators
+    - Use machine learning models to predict price movements  
+    - Provide clear trading recommendations with confidence levels
+    - Explain my reasoning in simple terms
+    - Suggest specific actions you should take
+    
+    💡 **Get started:** Choose your assets below and I'll analyze them for you!
+    """)
 
 # --- Sidebar controls ---
-st.sidebar.header("Inputs")
-crypto_text = st.sidebar.text_input("Crypto symbols (comma)", "BTC,ETH,FET")
-stock_text  = st.sidebar.text_input("Stock symbols (comma)",  "AAPL,MSFT,NVDA")
-period   = st.sidebar.selectbox("History period", ["1mo","3mo","6mo","1y"], index=3)
-interval = st.sidebar.selectbox("Interval", ["1d","1h","30m","5m"], index=0)
+st.sidebar.markdown("### 🎛️ Configuration")
+st.sidebar.markdown("**Choose the assets you want me to analyze:**")
+crypto_text = st.sidebar.text_input("🪙 Crypto symbols (comma-separated)", "BTC,ETH,FET", help="Enter crypto symbols like BTC, ETH, ADA")
+stock_text  = st.sidebar.text_input("📈 Stock symbols (comma-separated)",  "AAPL,MSFT,NVDA", help="Enter stock symbols like AAPL, GOOGL, TSLA")
+st.sidebar.markdown("**Analysis Settings:**")
+period   = st.sidebar.selectbox("📅 How much history to analyze?", ["1mo","3mo","6mo","1y"], index=3, help="More history = better analysis")
+interval = st.sidebar.selectbox("⏰ Data frequency", ["1d","1h","30m","5m"], index=0, help="Daily data recommended for most analysis")
+
+# Add helpful info in sidebar
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 💡 Tips")
+st.sidebar.info("""
+**For best results:**
+- Use stock symbols for full historical analysis
+- Crypto shows current prices (free API limits)
+- Try AAPL, MSFT, NVDA for demo
+- Run AI analysis for detailed insights
+""")
 
 # Parse user lists
 crypto_syms = [s.strip().upper() for s in crypto_text.split(",") if s.strip()]
@@ -58,107 +96,108 @@ stock_syms  = [s.strip().upper() for s in stock_text.split(",") if s.strip()]
 
 ing = DataIngestion()
 
-tab_data, tab_compare, tab_backtest = st.tabs(["Data (CMC + Yahoo)","Compare Models","Backtest Best Model"])
+# Create user-friendly tabs
+tab_overview, tab_ai_analysis, tab_models, tab_backtest = st.tabs([
+    "🏠 Overview & Data", 
+    "🤖 AI Analysis", 
+    "🧠 Model Training", 
+    "📊 Backtest Results"
+])
 
 # =========================
 # 1) DATA TAB
 # =========================
-with tab_data:
-    st.subheader("Fetch Data from both sources")
+with tab_overview:
+    st.markdown("### 📊 Market Data Overview")
+    st.markdown("Get the latest market data for your chosen assets. I'll load this data for analysis.")
+    
+    # Store data in session state
+    if 'market_data' not in st.session_state:
+        st.session_state.market_data = {}
+    
     col1, col2 = st.columns(2)
+    
     with col1:
-        if st.button("Load Mixed (Crypto via CMC + Stocks via Yahoo)"):
-            with st.spinner("Fetching…"):
-                MIX = ing.fetch_mixed_data(
-                    crypto_symbols=crypto_syms,
-                    stock_symbols=stock_syms,
-                    period=period, interval=interval
-                )
-            st.success(f"Loaded {len(MIX)} series")
-            for sym, df in MIX.items():
-                st.markdown(f"**{sym}** ({len(df)} rows)")
-                
-                if len(df) <= 1:
-                    st.warning(f"⚠️ {sym}: Only current price available (limited historical data)")
-                    if len(df) == 1:
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.metric(f"{sym} Price", f"${df['close'].iloc[0]:,.2f}")
-                        with col2:
-                            st.metric(f"{sym} Volume", f"${df['volume'].iloc[0]/1e6:.1f}M")
-                else:
-                    # Create proper price chart with axis labels
-                    fig = go.Figure()
-                    chart_data = df.tail(250) if len(df) > 250 else df
-                    fig.add_trace(go.Scatter(
-                        x=chart_data.index,
-                        y=chart_data["close"],
-                        mode='lines',
-                        name=f'{sym} Price',
-                        line=dict(color='blue')
-                    ))
-                    fig.update_layout(
-                        title=f'{sym} Price Chart',
-                        xaxis_title='Date',
-                        yaxis_title='Price (USD)',
-                        height=400,
-                        showlegend=True
+        st.markdown("### 📈 Load Your Portfolio Data")
+        if st.button("🔄 Load All Selected Assets", type="primary"):
+            with st.spinner("📡 Fetching market data for analysis..."):
+                try:
+                    MIX = ing.fetch_mixed_data(
+                        crypto_symbols=crypto_syms if crypto_syms else [],
+                        stock_symbols=stock_syms if stock_syms else [],
+                        period=period, interval=interval
                     )
-                    st.plotly_chart(fig, use_container_width=True)
-
+                    st.session_state.market_data = MIX
+                    st.success(f"✅ Successfully loaded data for {len(MIX)} assets!")
+                except Exception as e:
+                    st.error(f"❌ Error loading data: {str(e)}")
+                    st.session_state.market_data = {}
+    
     with col2:
-        if st.button("Quick-Load BTC from CoinMarketCap"):
-            with st.spinner("Pulling BTC OHLCV from CMC…"):
-                BTC = ing.fetch_crypto_data(["BTC"], period=period, interval=interval)
-            if not BTC:
-                st.error("No BTC data returned. Check your CMC_API_KEY in .env/Secrets.")
-            else:
-                df = BTC["BTC"]
-                if len(df) == 1:
-                    st.warning(f"⚠️ Only current price available (CMC free tier limits historical data)")
-                    st.success(f"BTC current price: ${df['close'].iloc[0]:,.2f} (source: CMC)")
-                    
-                    # Show current price as a metric instead of empty chart
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("Current Price", f"${df['close'].iloc[0]:,.2f}")
-                    with col2:
-                        st.metric("24h Volume", f"${df['volume'].iloc[0]/1e9:.1f}B")
-                    with col3:
-                        st.metric("High", f"${df['high'].iloc[0]:,.2f}")
-                    with col4:
-                        st.metric("Low", f"${df['low'].iloc[0]:,.2f}")
-                    
-                    st.info("💡 For historical charts, try the stock data (AAPL, MSFT, NVDA) which shows full price history.")
-                else:
-                    st.success(f"BTC rows: {len(df)} (source: CMC)")
-                    # Create proper BTC price chart with axis labels
-                    fig = go.Figure()
-                    chart_data = df.tail(250) if len(df) > 250 else df
-                    fig.add_trace(go.Scatter(
-                        x=chart_data.index,
-                        y=chart_data["close"],
-                        mode='lines',
-                        name='BTC Price',
-                        line=dict(color='orange')
-                    ))
-                    fig.update_layout(
-                        title='Bitcoin (BTC) Price Chart',
-                        xaxis_title='Date',
-                        yaxis_title='Price (USD)',
-                        height=400,
-                        showlegend=True
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-
-    st.caption("Note: Crypto uses CoinMarketCap (CMC_API_KEY required). Stocks use Yahoo Finance via `yfinance`.")
+        st.markdown("### ₿ Quick Bitcoin Check")
+        if st.button("⚡ Get Bitcoin Price"):
+            with st.spinner("Getting Bitcoin data..."):
+                try:
+                    BTC = ing.fetch_crypto_data(["BTC"], period=period, interval=interval)
+                    if BTC and "BTC" in BTC:
+                        st.session_state.market_data["BTC"] = BTC["BTC"]
+                        df = BTC["BTC"]
+                        st.success(f"₿ Bitcoin: ${df['close'].iloc[-1]:,.2f}")
+                    else:
+                        st.warning("⚠️ Could not fetch Bitcoin data (API limitations)")
+                except Exception as e:
+                    st.error(f"❌ Bitcoin fetch error: {str(e)}")
+    
+    # Display loaded data
+    if st.session_state.market_data:
+        st.markdown("### 📋 Currently Loaded Assets")
+        
+        # Create summary metrics
+        asset_list = list(st.session_state.market_data.items())
+        cols = st.columns(min(len(asset_list), 4))
+        for i, (symbol, df) in enumerate(asset_list):
+            with cols[i % 4]:
+                current_price = df['close'].iloc[-1]
+                price_change = ((df['close'].iloc[-1] / df['close'].iloc[0]) - 1) * 100 if len(df) > 1 else 0
+                
+                st.metric(
+                    label=f"📊 {symbol}",
+                    value=f"${current_price:,.2f}",
+                    delta=f"{price_change:+.1f}%" if len(df) > 1 else "Current"
+                )
+        
+        # Show data quality info
+        st.markdown("**📈 Data Summary:**")
+        for symbol, df in st.session_state.market_data.items():
+            data_quality = "📊 Full Historical" if len(df) > 30 else "⚠️ Limited Data" if len(df) > 1 else "📍 Current Price Only"
+            st.markdown(f"- **{symbol}:** {len(df)} data points | {data_quality}")
+    
+    else:
+        st.info("👆 Click 'Load All Selected Assets' above to get started with your market analysis!")
+    
 
 # =========================
-# 2) COMPARE MODELS TAB
+# 2) AI ANALYSIS TAB
 # =========================
-with tab_compare:
-    st.subheader("Train & Compare (RF / XGB / LSTM when available)")
-    st.write("Select one symbol to compare on (stock preferred if provided).")
+with tab_ai_analysis:
+    market_data = st.session_state.get('market_data', {})
+    render_ai_analysis_tab(market_data, st.session_state.ai_advisor, period, interval)
+
+# =========================
+# 3) MODEL TRAINING TAB
+# =========================
+with tab_models:
+    market_data = st.session_state.get('market_data', {})
+    render_model_training_tab(market_data, period, interval)
+
+# =========================
+# 4) BACKTEST RESULTS TAB
+# =========================
+with tab_backtest:
+    market_data = st.session_state.get('market_data', {})
+    render_backtest_tab(market_data)
+    # This content is now handled by the new AI analysis tabs
+    st.info("This content has been moved to the new AI Analysis tabs above for better user experience!")
 
     # Choose data source automatically: stock preferred
     candidate = (stock_syms[:1] or crypto_syms[:1])
