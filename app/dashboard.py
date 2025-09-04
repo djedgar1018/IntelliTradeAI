@@ -166,11 +166,43 @@ with tab_overview:
                     delta=f"{price_change:+.1f}%" if len(df) > 1 else "Current"
                 )
         
-        # Show data quality info
-        st.markdown("**📈 Data Summary:**")
+        # Show data quality info with charts
+        st.markdown("**📈 Asset Details:**")
+        
         for symbol, df in st.session_state.market_data.items():
             data_quality = "📊 Full Historical" if len(df) > 30 else "⚠️ Limited Data" if len(df) > 1 else "📍 Current Price Only"
-            st.markdown(f"- **{symbol}:** {len(df)} data points | {data_quality}")
+            
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.markdown(f"**{symbol}:** {len(df)} data points | {data_quality}")
+            
+            with col2:
+                if len(df) > 1:  # Only show chart option if we have historical data
+                    with st.expander(f"📊 See Chart"):
+                        import plotly.graph_objects as go
+                        
+                        fig = go.Figure()
+                        fig.add_trace(go.Scatter(
+                            x=df.index,
+                            y=df['close'],
+                            mode='lines',
+                            name=f'{symbol} Price',
+                            line=dict(color='#1f77b4', width=2)
+                        ))
+                        
+                        fig.update_layout(
+                            title=f'{symbol} Price History',
+                            xaxis_title='Date',
+                            yaxis_title='Price (USD)',
+                            height=300,
+                            showlegend=False
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Quick stats
+                        price_change = ((df['close'].iloc[-1] / df['close'].iloc[0]) - 1) * 100
+                        st.caption(f"Total return: {price_change:+.1f}% | Period: {df.index[0].date()} to {df.index[-1].date()}")
     
     else:
         st.info("👆 Click 'Load All Selected Assets' above to get started with your market analysis!")
@@ -196,106 +228,3 @@ with tab_models:
 with tab_backtest:
     market_data = st.session_state.get('market_data', {})
     render_backtest_tab(market_data)
-    # This content is now handled by the new AI analysis tabs
-    st.info("This content has been moved to the new AI Analysis tabs above for better user experience!")
-
-    # Choose data source automatically: stock preferred
-    candidate = (stock_syms[:1] or crypto_syms[:1])
-    if not candidate:
-        st.info("Add at least one symbol in the sidebar to enable comparison.")
-    else:
-        if st.button("Run Comparison"):
-            with st.spinner("Loading series & training models…"):
-                if stock_syms:
-                    data_map = ing.fetch_mixed_data(crypto_symbols=[], stock_symbols=stock_syms[:1], period=period, interval=interval)
-                else:
-                    data_map = ing.fetch_mixed_data(crypto_symbols=crypto_syms[:1], stock_symbols=[], period=period, interval=interval)
-
-                sym, df = list(data_map.items())[0]
-                scoreboard, best_model, best_path = compare_models(df)
-
-            st.success(f"Best model: **{best_model}**")
-            st.dataframe(scoreboard, use_container_width=True)
-
-            out = save_compare_record(sym, scoreboard, best_model, best_path)
-            st.caption(f"Saved comparison record → `{out}`")
-
-# =========================
-# 3) BACKTEST TAB
-# =========================
-with tab_backtest:
-    st.subheader("Backtest using the most recent best model (auto loaded)")
-    thr = st.slider("Probability threshold (long when ≥ threshold)", 0.50, 0.70, 0.55, 0.01)
-
-    if st.button("Run Model-Driven Backtest"):
-        # 1) Load most recent comparison artifact
-        rec = latest_compare_record()
-        if not rec:
-            st.warning("No compare record found. Run 'Compare Models' first.")
-        else:
-            model_path = rec.get("best_model_path")
-            if not model_path or not os.path.exists(model_path):
-                # fallback to cache paths
-                for p in ("models/cache/xgb.pkl", "models/cache/rf.pkl"):
-                    if os.path.exists(p):
-                        model_path = p; break
-
-        if not rec or not model_path or not os.path.exists(model_path):
-            st.error("No saved model artifact available.")
-        else:
-            # 2) Pull a fresh series for the same symbol used in compare
-            symbol_to_use = rec.get("symbol", (stock_syms[:1] or crypto_syms[:1] or ["AAPL"]))[0]
-            if symbol_to_use in stock_syms:
-                data_map = ing.fetch_mixed_data(crypto_symbols=[], stock_symbols=[symbol_to_use], period=period, interval=interval)
-            else:
-                data_map = ing.fetch_mixed_data(crypto_symbols=[symbol_to_use], stock_symbols=[], period=period, interval=interval)
-
-            sym, df = list(data_map.items())[0]
-
-            # 3) Rebuild features in the same way as training
-            X, y, feats, processed = build_features(df, horizon=1)
-
-            try:
-                model = joblib.load(model_path)
-            except Exception as e:
-                st.error(f"Failed loading model: {e}")
-                model = None
-
-            if model is None:
-                st.stop()
-
-            # 4) Probabilities → signals
-            if hasattr(model, "predict_proba"):
-                proba = model.predict_proba(X)[:, 1]
-            elif hasattr(model, "decision_function"):
-                z = model.decision_function(X)
-                proba = 1 / (1 + np.exp(-z))
-            else:
-                proba = model.predict(X).astype(float)
-
-            proba_s = pd.Series(proba, index=processed.index[:len(proba)])
-            signals = (proba_s >= thr).astype(int)
-
-            # 5) Backtest
-            metrics, equity, trades = simulate_long_flat(processed["close"], signals)
-            st.json(metrics)
-            
-            # Create proper equity curve chart with axis labels
-            equity_df = equity.set_index("date")
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=equity_df.index,
-                y=equity_df["equity"],
-                mode='lines',
-                name='Portfolio Equity',
-                line=dict(color='green', width=2)
-            ))
-            fig.update_layout(
-                title='Backtest Equity Curve',
-                xaxis_title='Date',
-                yaxis_title='Portfolio Value (USD)',
-                height=400,
-                showlegend=True
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            st.caption(f"Backtested: {sym} | Model: {os.path.basename(model_path)}")

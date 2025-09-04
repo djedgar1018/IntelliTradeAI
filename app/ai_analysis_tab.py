@@ -154,44 +154,115 @@ def render_ai_analysis_tab(market_data, ai_advisor, period, interval):
                 st.markdown(f"**Confidence Level:** {model['confidence']}")
                 st.markdown(f"**Explanation:** {model['explanation']}")
         
-        # Chart if we have enough data
+        # Chart in expandable section as requested
         if len(asset_data) > 1:
-            st.markdown("### 📊 Price Chart")
-            
-            import plotly.graph_objects as go
-            
-            fig = go.Figure()
-            
-            # Price line
-            fig.add_trace(go.Scatter(
-                x=asset_data.index,
-                y=asset_data['close'],
-                mode='lines',
-                name=f'{selected_asset} Price',
-                line=dict(color='#1f77b4', width=2)
-            ))
-            
-            # Add moving average if enough data
-            if len(asset_data) >= 20:
-                ma20 = asset_data['close'].rolling(window=20).mean()
+            with st.expander("📊 See Chart"):
+                import plotly.graph_objects as go
+                
+                fig = go.Figure()
+                
+                # Price line
                 fig.add_trace(go.Scatter(
                     x=asset_data.index,
-                    y=ma20,
+                    y=asset_data['close'],
                     mode='lines',
-                    name='20-day Average',
-                    line=dict(color='orange', width=1)
+                    name=f'{selected_asset} Price',
+                    line=dict(color='#1f77b4', width=2)
                 ))
-            
-            fig.update_layout(
-                title=f'{selected_asset} Price Analysis',
-                xaxis_title='Date',
-                yaxis_title='Price (USD)',
-                height=400,
-                showlegend=True,
-                hovermode='x unified'
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
+                
+                # Add moving average if enough data
+                if len(asset_data) >= 20:
+                    ma20 = asset_data['close'].rolling(window=20).mean()
+                    fig.add_trace(go.Scatter(
+                        x=asset_data.index,
+                        y=ma20,
+                        mode='lines',
+                        name='20-day Moving Average',
+                        line=dict(color='orange', width=1)
+                    ))
+                
+                # Add volume if available
+                if 'volume' in asset_data.columns and asset_data['volume'].sum() > 0:
+                    # Create subplot with secondary y-axis
+                    from plotly.subplots import make_subplots
+                    
+                    fig = make_subplots(
+                        rows=2, cols=1,
+                        row_heights=[0.7, 0.3],
+                        vertical_spacing=0.05,
+                        subplot_titles=('Price', 'Volume'),
+                        shared_xaxes=True
+                    )
+                    
+                    # Price chart
+                    fig.add_trace(
+                        go.Scatter(
+                            x=asset_data.index,
+                            y=asset_data['close'],
+                            mode='lines',
+                            name=f'{selected_asset} Price',
+                            line=dict(color='#1f77b4', width=2)
+                        ), row=1, col=1
+                    )
+                    
+                    # Moving average
+                    if len(asset_data) >= 20:
+                        ma20 = asset_data['close'].rolling(window=20).mean()
+                        fig.add_trace(
+                            go.Scatter(
+                                x=asset_data.index,
+                                y=ma20,
+                                mode='lines',
+                                name='20-day MA',
+                                line=dict(color='orange', width=1)
+                            ), row=1, col=1
+                        )
+                    
+                    # Volume chart
+                    fig.add_trace(
+                        go.Bar(
+                            x=asset_data.index,
+                            y=asset_data['volume'],
+                            name='Volume',
+                            marker_color='lightblue',
+                            opacity=0.6
+                        ), row=2, col=1
+                    )
+                    
+                    fig.update_layout(
+                        title=f'{selected_asset} Price & Volume Analysis',
+                        height=600,
+                        showlegend=True,
+                        hovermode='x unified'
+                    )
+                    
+                    fig.update_xaxes(title_text="Date", row=2, col=1)
+                    fig.update_yaxes(title_text="Price (USD)", row=1, col=1)
+                    fig.update_yaxes(title_text="Volume", row=2, col=1)
+                    
+                else:
+                    fig.update_layout(
+                        title=f'{selected_asset} Price Analysis',
+                        xaxis_title='Date',
+                        yaxis_title='Price (USD)',
+                        height=400,
+                        showlegend=True,
+                        hovermode='x unified'
+                    )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Chart insights
+                price_change = ((asset_data['close'].iloc[-1] / asset_data['close'].iloc[0]) - 1) * 100
+                volatility = asset_data['close'].pct_change().std() * 100
+                
+                st.markdown(f"""
+                **📊 Chart Insights:**
+                - **Total Change:** {price_change:+.1f}% over the period
+                - **Price Volatility:** {volatility:.1f}% (daily standard deviation)
+                - **Data Points:** {len(asset_data)} observations
+                - **Period:** {asset_data.index[0].date()} to {asset_data.index[-1].date()}
+                """)
         
         # Risk warning
         st.markdown("---")
@@ -318,13 +389,13 @@ def render_model_training_tab(market_data, period, interval):
     if st.button("🚀 Start AI Model Training", type="primary"):
         with st.spinner("🤖 Training AI models... This may take a minute..."):
             try:
-                from models.model_comparison import compare_models
+                from models.model_comparison import compare_models_safe
                 
                 df = suitable_assets[training_asset]
                 st.info(f"Training models on {training_asset} with {len(df)} data points...")
                 
-                # Run model comparison
-                scoreboard, best_model, best_path = compare_models(df)
+                # Run model comparison (without LSTM to avoid TensorFlow issues)
+                scoreboard, best_model, best_path = compare_models_safe(df)
                 
                 st.success(f"🎉 Training complete! Best model: **{best_model}**")
                 
@@ -357,7 +428,6 @@ def render_model_training_tab(market_data, period, interval):
                 """)
                 
                 # Save training results
-                from datetime import datetime
                 import json
                 
                 timestamp = int(datetime.now().timestamp())
