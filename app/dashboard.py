@@ -80,7 +80,7 @@ with tab_data:
                 # Create proper price chart with axis labels
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
-                    x=df.index.tail(250),
+                    x=df.index[-250:],
                     y=df["close"].tail(250),
                     mode='lines',
                     name=f'{sym} Price',
@@ -107,7 +107,7 @@ with tab_data:
                 # Create proper BTC price chart with axis labels
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
-                    x=df.index.tail(250),
+                    x=df.index[-250:],
                     y=df["close"].tail(250),
                     mode='lines',
                     name='BTC Price',
