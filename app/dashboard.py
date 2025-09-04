@@ -12,7 +12,7 @@ import numpy as np
 
 from data.data_ingestion import DataIngestion
 from models.model_comparison import compare_models
-from features.feature_engineering import build_features
+from backtest.features.feature_engineering import build_features
 from backtest.backtesting_engine import simulate_long_flat, proba_to_signal
 
 EXPERIMENTS_DIR = os.getenv("EXPERIMENTS_DIR", "experiments")
