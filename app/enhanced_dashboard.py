@@ -21,9 +21,20 @@ try:
     from blockchain.wallet_manager import SecureWalletManager, PortfolioTracker
     from ai_vision.chart_pattern_recognition import ChartPatternRecognizer
     from ai_advisor.trading_intelligence import TradingIntelligence
-    from data import data_ingestion as ing
+    # Try to import the real data ingestion module
+    from data.data_ingestion import DataIngestion
+    ing = DataIngestion()
+    
+    # Test if the data ingestion is working properly
+    try:
+        test_data = ing.fetch_mixed_data(stock_symbols=['AAPL'], period='5d', interval='1d')
+        if not test_data:
+            raise Exception("Data ingestion test failed")
+    except Exception as test_error:
+        # If real data ingestion fails, use fallback
+        raise ImportError(f"Data ingestion not working: {test_error}")
 except ImportError as e:
-    st.error(f"Import error: {e}")
+    st.warning(f"Using demo mode due to import issue: {e}")
     # Create mock classes for demo
     class SecureAuthManager:
         def __init__(self, secret_key): pass
