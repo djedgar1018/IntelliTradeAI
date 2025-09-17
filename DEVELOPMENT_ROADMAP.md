@@ -6,180 +6,41 @@ This roadmap outlines strategic improvements to enhance the AI Trading Bot's acc
 
 ---
 
-## 🔄 Visual Development Flow Diagram
+## 🔄 Visual Development Flow Diagrams
 
-```mermaid
-graph TD
-    A[Current System<br/>75-85% Accuracy] --> B{Development Phases}
-    
-    B --> C[Phase 1: Immediate<br/>1-2 Weeks]
-    B --> D[Phase 2: Advanced<br/>2-4 Weeks] 
-    B --> E[Phase 3: Production<br/>1-2 Months]
-    
-    C --> C1[Enhanced Features<br/>+20 Indicators]
-    C --> C2[Model Architecture<br/>LightGBM, CatBoost]
-    C --> C3[Real-time Data<br/>Sentiment Analysis]
-    
-    D --> D1[Deep Learning<br/>LSTM + Attention]
-    D --> D2[Reinforcement Learning<br/>DQN Agent]
-    D --> D3[Signal Processing<br/>Wavelet Analysis]
-    
-    E --> E1[MLOps Pipeline<br/>Continuous Learning]
-    E --> E2[Risk Management<br/>Portfolio Optimization]
-    E --> E3[Performance Analytics<br/>Attribution Analysis]
-    
-    C1 --> F1[Target: 80-85% Accuracy]
-    C2 --> F1
-    C3 --> F1
-    
-    D1 --> F2[Target: 85-90% Accuracy]
-    D2 --> F2
-    D3 --> F2
-    
-    E1 --> F3[Target: 90%+ Accuracy<br/>Production Ready]
-    E2 --> F3
-    E3 --> F3
-    
-    F1 --> G[Continuous Improvement Cycle]
-    F2 --> G
-    F3 --> G
-    
-    G --> H[Data Collection<br/>Market Data + News]
-    H --> I[Feature Engineering<br/>Technical + Sentiment]
-    I --> J[Model Training<br/>Multi-Algorithm]
-    J --> K[Ensemble Prediction<br/>Confidence Scoring]
-    K --> L[Performance Monitoring<br/>Accuracy Tracking]
-    L --> M{Performance<br/>Acceptable?}
-    
-    M -->|Yes| N[Deploy Signals<br/>Live Trading]
-    M -->|No| O[Retrain Models<br/>Adjust Parameters]
-    O --> I
-    N --> P[Collect Results<br/>Trade Outcomes]
-    P --> H
-    
-    style A fill:#ffcccc
-    style F1 fill:#ffffcc
-    style F2 fill:#ccffcc
-    style F3 fill:#ccffff
-    style G fill:#e6ccff
-```
+### Development Roadmap Overview
+This diagram shows the three-phase development approach with target accuracy improvements at each stage:
 
-### Data Flow Architecture
+![Development Roadmap Flowchart](attached_assets/generated_images/Development_roadmap_flowchart_phases_a37c96a9.png)
 
-```mermaid
-graph LR
-    subgraph "Data Sources"
-        A1[Yahoo Finance<br/>Stock Data]
-        A2[CoinMarketCap<br/>Crypto Data]
-        A3[News APIs<br/>Sentiment Data]
-        A4[Economic Indicators<br/>Fed Data]
-    end
-    
-    subgraph "Data Processing"
-        B1[Data Ingestion<br/>Real-time Feeds]
-        B2[Data Cleaning<br/>Validation]
-        B3[Feature Engineering<br/>50+ Indicators]
-        B4[Data Storage<br/>Cache & History]
-    end
-    
-    subgraph "ML Pipeline"
-        C1[Random Forest<br/>Trend Analysis]
-        C2[XGBoost<br/>Pattern Recognition]
-        C3[LSTM<br/>Time Series]
-        C4[SVM<br/>Classification]
-        C5[Ensemble<br/>Weighted Voting]
-    end
-    
-    subgraph "Decision Engine"
-        D1[Signal Generation<br/>Buy/Sell/Hold]
-        D2[Confidence Scoring<br/>0-100%]
-        D3[Risk Assessment<br/>Stop Loss/Take Profit]
-        D4[Position Sizing<br/>Portfolio Allocation]
-    end
-    
-    subgraph "Output Interfaces"
-        E1[Web Dashboard<br/>Streamlit UI]
-        E2[REST API<br/>Programmatic Access]
-        E3[Trading Signals<br/>Real-time Alerts]
-        E4[Performance Reports<br/>Analytics]
-    end
-    
-    A1 --> B1
-    A2 --> B1
-    A3 --> B1
-    A4 --> B1
-    
-    B1 --> B2
-    B2 --> B3
-    B3 --> B4
-    
-    B4 --> C1
-    B4 --> C2
-    B4 --> C3
-    B4 --> C4
-    
-    C1 --> C5
-    C2 --> C5
-    C3 --> C5
-    C4 --> C5
-    
-    C5 --> D1
-    D1 --> D2
-    D2 --> D3
-    D3 --> D4
-    
-    D4 --> E1
-    D4 --> E2
-    D4 --> E3
-    D4 --> E4
-    
-    style C5 fill:#ffcccc
-    style D1 fill:#ccffcc
-    style E1 fill:#ccffff
-```
+**Phase Progression:**
+- **Phase 1 (1-2 weeks)**: Enhanced features, model architecture improvements, real-time data integration → Target: 80-85% accuracy
+- **Phase 2 (2-4 weeks)**: Deep learning, reinforcement learning, signal processing → Target: 85-90% accuracy  
+- **Phase 3 (1-2 months)**: MLOps pipeline, risk management, performance analytics → Target: 90%+ accuracy
 
-### Training Optimization Cycle
+### System Architecture & Data Flow
+This diagram illustrates how data flows through the entire trading bot system from source to output:
 
-```mermaid
-graph TB
-    subgraph "Daily Cycle"
-        DA[Market Close<br/>Data Update]
-        DB[Overnight Training<br/>Latest Data]
-        DC[Pre-market Validation<br/>Performance Check]
-        DD[Live Monitoring<br/>Signal Quality]
-    end
-    
-    subgraph "Weekly Deep Training"
-        WA[Comprehensive Retrain<br/>All Models]
-        WB[Feature Engineering<br/>Add/Remove Features]
-        WC[Hyperparameter Tuning<br/>Optimize Performance]
-        WD[Cross Validation<br/>Out-of-Sample Test]
-    end
-    
-    subgraph "Monthly Review"
-        MA[Performance Analysis<br/>Detailed Metrics]
-        MB[Strategy Adjustment<br/>Trading Rules]
-        MC[Data Pipeline Review<br/>Quality Assessment]
-        MD[Architecture Update<br/>New Algorithms]
-    end
-    
-    DA --> DB --> DC --> DD
-    DD --> DA
-    
-    WA --> WB --> WC --> WD
-    WD --> WA
-    
-    MA --> MB --> MC --> MD
-    MD --> MA
-    
-    DD -.-> WA
-    WD -.-> MA
-    MD -.-> DA
-    
-    style DB fill:#ffcccc
-    style WC fill:#ccffcc
-    style MA fill:#ccffff
-```
+![System Architecture Data Flow](attached_assets/generated_images/System_architecture_data_flow_f90cb6eb.png)
+
+**Data Journey:**
+1. **Data Sources**: Market data from multiple APIs and news feeds
+2. **Data Processing**: Real-time ingestion, cleaning, and feature engineering
+3. **ML Pipeline**: Multiple algorithms working together in an ensemble approach
+4. **Decision Engine**: Signal generation with confidence scoring and risk assessment
+5. **Output Interfaces**: Web dashboard, API access, and trading alerts
+
+### Training Optimization Cycles
+This diagram shows the continuous learning approach with daily, weekly, and monthly training cycles:
+
+![Training Optimization Cycles](attached_assets/generated_images/Training_optimization_cycles_diagram_8e61c0a5.png)
+
+**Continuous Improvement Process:**
+- **Daily Cycle**: Market close data updates → overnight training → pre-market validation → live monitoring
+- **Weekly Deep Training**: Comprehensive model retraining with feature engineering and hyperparameter optimization
+- **Monthly Review**: Performance analysis, strategy adjustments, and architecture updates
+
+These cycles ensure the trading bot continuously adapts to changing market conditions and maintains optimal performance.
 
 ---
 
