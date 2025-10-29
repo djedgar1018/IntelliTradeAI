@@ -94,7 +94,7 @@ class SequenceDiagram:
 # ============================================================================
 def create_day_trader_prediction_sequence():
     diagram = SequenceDiagram('Sequence Diagram: Day Trader Getting Real-time Prediction', width=14, height=11)
-    diagram.add_title()
+    # Title removed to prevent covering actor names
     
     # Actors
     user_x = diagram.add_actor(2, 'Day Trader\n(Web UI)', False)
@@ -157,7 +157,7 @@ def create_day_trader_prediction_sequence():
 # ============================================================================
 def create_model_training_sequence():
     diagram = SequenceDiagram('Sequence Diagram: Data Scientist Training ML Model', width=14, height=12)
-    diagram.add_title()
+    # Title removed to prevent covering actor names
     
     # Actors
     user_x = diagram.add_actor(2, 'Data Scientist\n(Web UI)', False)
@@ -229,7 +229,7 @@ def create_model_training_sequence():
 # ============================================================================
 def create_api_integration_sequence():
     diagram = SequenceDiagram('Sequence Diagram: Algorithm Developer Using REST API', width=14, height=10)
-    diagram.add_title()
+    # Title removed to prevent covering actor names
     
     # Actors
     user_x = diagram.add_actor(2, 'Trading Bot\n(Python Script)', False)
@@ -286,7 +286,7 @@ def create_api_integration_sequence():
 # ============================================================================
 def create_backtest_sequence():
     diagram = SequenceDiagram('Sequence Diagram: Portfolio Manager Running Backtest', width=14, height=11)
-    diagram.add_title()
+    # Title removed to prevent covering actor names
     
     # Actors
     user_x = diagram.add_actor(2, 'Portfolio\nManager', False)
