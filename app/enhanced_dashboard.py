@@ -639,11 +639,15 @@ def render_ai_analysis_page():
     # Asset selection
     col1, col2 = st.columns([2, 1])
     
+    # Define available cryptocurrencies (top 10) and stocks
+    top_10_cryptos = ["BTC", "ETH", "USDT", "XRP", "BNB", "SOL", "USDC", "TRX", "DOGE", "ADA"]
+    popular_stocks = ["NVDA", "AAPL", "MSFT", "TSLA", "GOOGL", "AMZN"]
+    
     with col1:
         selected_symbols = st.multiselect(
             "Select assets to analyze:",
-            ["NVDA", "AAPL", "MSFT", "TSLA", "BTC", "ETH"],
-            default=["NVDA", "AAPL"]
+            popular_stocks + top_10_cryptos,
+            default=["BTC", "XRP"]
         )
     
     with col2:
@@ -653,8 +657,10 @@ def render_ai_analysis_page():
         if selected_symbols:
             with st.spinner("Running AI analysis on selected assets..."):
                 # Load data for selected symbols
-                stock_symbols = [s for s in selected_symbols if s not in ['BTC', 'ETH']]
-                crypto_symbols = [s for s in selected_symbols if s in ['BTC', 'ETH']]
+                # Top 10 cryptocurrencies
+                known_cryptos = ["BTC", "ETH", "USDT", "XRP", "BNB", "SOL", "USDC", "TRX", "DOGE", "ADA"]
+                crypto_symbols = [s for s in selected_symbols if s in known_cryptos]
+                stock_symbols = [s for s in selected_symbols if s not in known_cryptos]
                 
                 try:
                     # Convert period format for Yahoo Finance compatibility
