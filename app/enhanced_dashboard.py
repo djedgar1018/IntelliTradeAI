@@ -20,7 +20,7 @@ try:
     from auth.secure_auth import SecureAuthManager
     from blockchain.wallet_manager import SecureWalletManager, PortfolioTracker
     from ai_vision.chart_pattern_recognition import ChartPatternRecognizer
-    from ai_advisor.trading_intelligence import TradingIntelligence
+    from ai_advisor.ml_predictor import MLPredictor  # Use real ML predictor
     # Try to import the real data ingestion module
     from data.data_ingestion import DataIngestion
     ing = DataIngestion()
@@ -167,7 +167,7 @@ if 'wallet_manager' not in st.session_state:
 if 'pattern_recognizer' not in st.session_state:
     st.session_state.pattern_recognizer = ChartPatternRecognizer()
 if 'ai_advisor' not in st.session_state:
-    st.session_state.ai_advisor = TradingIntelligence()
+    st.session_state.ai_advisor = MLPredictor()
 
 def render_login_page():
     """Render the login/registration page"""
