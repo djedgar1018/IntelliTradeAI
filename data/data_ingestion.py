@@ -1,6 +1,7 @@
 """
-Data Ingestion Module
-Handles API calls for cryptocurrency and stock data
+Data Ingestion Module - Hybrid Approach
+- Yahoo Finance: Historical OHLCV data (free, reliable)
+- CoinMarketCap: Current prices and real-time data (paid API, more accurate)
 """
 
 import yfinance as yf
@@ -22,7 +23,8 @@ class DataIngestion:
         
     def fetch_crypto_data(self, symbols, period='1y', interval='1d'):
         """
-        Fetch cryptocurrency data using Yahoo Finance (free and reliable)
+        Fetch cryptocurrency data using Yahoo Finance for historical OHLCV
+        (Works with both free and paid CoinMarketCap plans)
         
         Args:
             symbols: List of crypto symbols (e.g., ['BTC', 'ETH', 'XRP'])
@@ -35,7 +37,7 @@ class DataIngestion:
         try:
             crypto_data = {}
             
-            # Yahoo Finance crypto symbol mapping
+            # Yahoo Finance crypto symbol mapping (Top 10 + more)
             yahoo_crypto_map = {
                 'BTC': 'BTC-USD',
                 'ETH': 'ETH-USD',
@@ -59,7 +61,7 @@ class DataIngestion:
                     # Get Yahoo Finance symbol
                     yf_symbol = yahoo_crypto_map.get(symbol, f'{symbol}-USD')
                     
-                    # Fetch data using Yahoo Finance (same as stocks)
+                    # Fetch historical data using Yahoo Finance
                     ticker = yf.Ticker(yf_symbol)
                     hist_data = ticker.history(period=period, interval=interval)
                     
@@ -70,8 +72,19 @@ class DataIngestion:
                         # Select only OHLCV data
                         ohlcv_data = hist_data[['open', 'high', 'low', 'close', 'volume']].copy()
                         
+                        # Enrich with current CoinMarketCap data (if available)
+                        try:
+                            current_price = self._fetch_crypto_current_price(symbol)
+                            if current_price:
+                                # Update the latest price with CMC data (more accurate)
+                                ohlcv_data.iloc[-1, ohlcv_data.columns.get_loc('close')] = current_price['price']
+                                print(f"✅ Fetched {len(ohlcv_data)} data points for {symbol} (enriched with CMC)")
+                            else:
+                                print(f"✅ Fetched {len(ohlcv_data)} data points for {symbol}")
+                        except:
+                            print(f"✅ Fetched {len(ohlcv_data)} data points for {symbol}")
+                        
                         crypto_data[symbol] = ohlcv_data
-                        print(f"✅ Fetched {len(ohlcv_data)} data points for {symbol}")
                         
                         # Small delay to avoid rate limiting
                         time.sleep(0.1)
@@ -87,126 +100,43 @@ class DataIngestion:
         except Exception as e:
             raise Exception(f"Error fetching crypto data: {str(e)}")
     
-    def _get_crypto_symbol_id(self, symbol):
-        """Get CoinMarketCap symbol ID"""
-        try:
-            url = f"{self.coinmarketcap_base_url}/cryptocurrency/map"
-            headers = {
-                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key
-            }
-            params = {
-                'symbol': symbol,
-                'limit': 1
-            }
-            
-            response = requests.get(url, headers=headers, params=params, timeout=30)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data['data']:
-                    return data['data'][0]['id']
-            
-            return None
-            
-        except Exception as e:
-            print(f"Error getting symbol ID for {symbol}: {str(e)}")
-            return None
-    
-    def _fetch_crypto_historical_data(self, symbol_id, period):
-        """Fetch historical crypto data from CoinMarketCap"""
-        try:
-            # Calculate date range
-            end_date = datetime.now()
-            if period == '1y':
-                start_date = end_date - timedelta(days=365)
-            elif period == '6mo':
-                start_date = end_date - timedelta(days=180)
-            elif period == '3mo':
-                start_date = end_date - timedelta(days=90)
-            elif period == '1mo':
-                start_date = end_date - timedelta(days=30)
-            else:
-                start_date = end_date - timedelta(days=365)
-            
-            url = f"{self.coinmarketcap_base_url}/cryptocurrency/ohlcv/historical"
-            headers = {
-                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key
-            }
-            params = {
-                'id': symbol_id,
-                'time_start': start_date.strftime('%Y-%m-%d'),
-                'time_end': end_date.strftime('%Y-%m-%d'),
-                'interval': 'daily'
-            }
-            
-            response = requests.get(url, headers=headers, params=params, timeout=30)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if 'data' in data and data['data']:
-                    quotes = data['data']['quotes']
-                    
-                    # Convert to DataFrame
-                    records = []
-                    for quote in quotes:
-                        record = {
-                            'date': pd.to_datetime(quote['time_open']),
-                            'open': quote['quote']['USD']['open'],
-                            'high': quote['quote']['USD']['high'],
-                            'low': quote['quote']['USD']['low'],
-                            'close': quote['quote']['USD']['close'],
-                            'volume': quote['quote']['USD']['volume']
-                        }
-                        records.append(record)
-                    
-                    df = pd.DataFrame(records)
-                    df.set_index('date', inplace=True)
-                    df.sort_index(inplace=True)
-                    
-                    return df
-            
-            return None
-            
-        except Exception as e:
-            print(f"Error fetching historical data: {str(e)}")
-            return None
-    
     def _fetch_crypto_current_price(self, symbol):
-        """Fetch current crypto price from CoinMarketCap"""
+        """
+        Fetch current crypto price from CoinMarketCap (using paid API)
+        Falls back gracefully if API unavailable
+        """
         try:
+            if not self.coinmarketcap_api_key:
+                return None
+            
             url = f"{self.coinmarketcap_base_url}/cryptocurrency/quotes/latest"
             headers = {
-                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key
+                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key,
+                'Accept': 'application/json'
             }
             params = {
                 'symbol': symbol,
                 'convert': 'USD'
             }
             
-            response = requests.get(url, headers=headers, params=params, timeout=30)
+            response = requests.get(url, headers=headers, params=params, timeout=10)
             
             if response.status_code == 200:
                 data = response.json()
                 if 'data' in data and symbol in data['data']:
                     quote = data['data'][symbol]['quote']['USD']
-                    
-                    # Create a simple DataFrame with current price
-                    current_data = {
-                        'open': [quote['price']],
-                        'high': [quote['price']],
-                        'low': [quote['price']],
-                        'close': [quote['price']],
-                        'volume': [quote['volume_24h']]
+                    return {
+                        'symbol': symbol,
+                        'price': quote['price'],
+                        'volume_24h': quote.get('volume_24h', 0),
+                        'percent_change_24h': quote.get('percent_change_24h', 0),
+                        'market_cap': quote.get('market_cap', 0)
                     }
-                    
-                    df = pd.DataFrame(current_data)
-                    df.index = [datetime.now()]
-                    return df
             
             return None
             
         except Exception as e:
-            print(f"Error fetching current price for {symbol}: {str(e)}")
+            # Fail silently - Yahoo data is already good enough
             return None
     
     def fetch_stock_data(self, symbols, period='1y', interval='1d'):
@@ -279,12 +209,12 @@ class DataIngestion:
             if stock_symbols is None:
                 stock_symbols = config.DATA_CONFIG["stock_symbols"]
             
-            # Fetch crypto data
+            # Fetch crypto data (Yahoo historical + CMC current)
             if crypto_symbols:
                 crypto_data = self.fetch_crypto_data(crypto_symbols, period, interval)
                 mixed_data.update(crypto_data)
             
-            # Fetch stock data
+            # Fetch stock data (Yahoo Finance)
             if stock_symbols:
                 stock_data = self.fetch_stock_data(stock_symbols, period, interval)
                 mixed_data.update(stock_data)
@@ -296,7 +226,7 @@ class DataIngestion:
     
     def get_real_time_quotes(self, symbols, data_type='mixed'):
         """
-        Get real-time quotes for specified symbols
+        Get real-time quotes using CoinMarketCap API (paid plan)
         
         Args:
             symbols: List of symbols
@@ -308,90 +238,81 @@ class DataIngestion:
         try:
             quotes = {}
             
-            if data_type in ['crypto', 'mixed']:
-                # Get crypto quotes
-                crypto_symbols = [s for s in symbols if s in config.DATA_CONFIG["crypto_symbols"]]
-                if crypto_symbols:
-                    crypto_quotes = self._get_crypto_quotes(crypto_symbols)
-                    quotes.update(crypto_quotes)
-            
-            if data_type in ['stock', 'mixed']:
-                # Get stock quotes
-                stock_symbols = [s for s in symbols if s in config.DATA_CONFIG["stock_symbols"]]
-                if stock_symbols:
-                    stock_quotes = self._get_stock_quotes(stock_symbols)
-                    quotes.update(stock_quotes)
-            
-            return quotes
-            
-        except Exception as e:
-            raise Exception(f"Error getting real-time quotes: {str(e)}")
-    
-    def _get_crypto_quotes(self, symbols):
-        """Get real-time crypto quotes"""
-        try:
-            url = f"{self.coinmarketcap_base_url}/cryptocurrency/quotes/latest"
-            headers = {
-                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key
-            }
-            params = {
-                'symbol': ','.join(symbols),
-                'convert': 'USD'
-            }
-            
-            response = requests.get(url, headers=headers, params=params, timeout=30)
-            
-            if response.status_code == 200:
-                data = response.json()
-                quotes = {}
-                
-                if 'data' in data:
-                    for symbol in symbols:
-                        if symbol in data['data']:
-                            quote_data = data['data'][symbol]['quote']['USD']
-                            quotes[symbol] = {
-                                'price': quote_data['price'],
-                                'change_24h': quote_data['percent_change_24h'],
-                                'volume_24h': quote_data['volume_24h'],
-                                'market_cap': quote_data['market_cap'],
-                                'last_updated': data['data'][symbol]['last_updated']
-                            }
-                
-                return quotes
-            
-            return {}
-            
-        except Exception as e:
-            print(f"Error getting crypto quotes: {str(e)}")
-            return {}
-    
-    def _get_stock_quotes(self, symbols):
-        """Get real-time stock quotes"""
-        try:
-            quotes = {}
-            
             for symbol in symbols:
                 try:
-                    ticker = yf.Ticker(symbol)
-                    info = ticker.info
+                    # For crypto, use CoinMarketCap
+                    if data_type in ['crypto', 'mixed']:
+                        price_data = self._fetch_crypto_current_price(symbol)
+                        if price_data:
+                            quotes[symbol] = price_data
                     
-                    if 'regularMarketPrice' in info:
-                        quotes[symbol] = {
-                            'price': info.get('regularMarketPrice', 0),
-                            'change_24h': info.get('regularMarketChangePercent', 0),
-                            'volume_24h': info.get('regularMarketVolume', 0),
-                            'market_cap': info.get('marketCap', 0),
-                            'last_updated': datetime.now().isoformat()
-                        }
-                    
-                    time.sleep(0.1)  # Rate limiting
+                    # For stocks, use Yahoo Finance
+                    if data_type in ['stock', 'mixed']:
+                        ticker = yf.Ticker(symbol)
+                        info = ticker.info
+                        
+                        if 'regularMarketPrice' in info:
+                            quotes[symbol] = {
+                                'symbol': symbol,
+                                'price': info['regularMarketPrice'],
+                                'volume': info.get('volume', 0),
+                                'market_cap': info.get('marketCap', 0)
+                            }
                     
                 except Exception as e:
-                    print(f"Error getting quote for {symbol}: {str(e)}")
+                    print(f"Error fetching quote for {symbol}: {str(e)}")
                     continue
             
             return quotes
             
         except Exception as e:
-            print(f"Error getting stock quotes: {str(e)}")
+            raise Exception(f"Error fetching real-time quotes: {str(e)}")
+    
+    def get_crypto_metadata(self, symbols):
+        """
+        Get cryptocurrency metadata from CoinMarketCap
+        
+        Args:
+            symbols: List of crypto symbols
+            
+        Returns:
+            metadata: Dictionary with metadata for each symbol
+        """
+        try:
+            if not self.coinmarketcap_api_key:
+                return {}
+            
+            metadata = {}
+            
+            url = f"{self.coinmarketcap_base_url}/cryptocurrency/info"
+            headers = {
+                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key,
+                'Accept': 'application/json'
+            }
+            params = {
+                'symbol': ','.join(symbols)
+            }
+            
+            response = requests.get(url, headers=headers, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    for symbol in symbols:
+                        if symbol in data['data']:
+                            info = data['data'][symbol]
+                            metadata[symbol] = {
+                                'name': info.get('name', ''),
+                                'symbol': info.get('symbol', ''),
+                                'category': info.get('category', ''),
+                                'description': info.get('description', ''),
+                                'logo': info.get('logo', ''),
+                                'website': info.get('urls', {}).get('website', []),
+                                'twitter': info.get('urls', {}).get('twitter', [])
+                            }
+            
+            return metadata
+            
+        except Exception as e:
+            print(f"Error fetching metadata: {str(e)}")
             return {}
