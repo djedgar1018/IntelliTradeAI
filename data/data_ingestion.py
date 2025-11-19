@@ -22,10 +22,10 @@ class DataIngestion:
         
     def fetch_crypto_data(self, symbols, period='1y', interval='1d'):
         """
-        Fetch cryptocurrency data from CoinMarketCap API
+        Fetch cryptocurrency data using Yahoo Finance (free and reliable)
         
         Args:
-            symbols: List of crypto symbols (e.g., ['BTC', 'ETH'])
+            symbols: List of crypto symbols (e.g., ['BTC', 'ETH', 'XRP'])
             period: Time period for data
             interval: Data interval
             
@@ -35,25 +35,51 @@ class DataIngestion:
         try:
             crypto_data = {}
             
+            # Yahoo Finance crypto symbol mapping
+            yahoo_crypto_map = {
+                'BTC': 'BTC-USD',
+                'ETH': 'ETH-USD',
+                'USDT': 'USDT-USD',
+                'XRP': 'XRP-USD',
+                'BNB': 'BNB-USD',
+                'SOL': 'SOL-USD',
+                'USDC': 'USDC-USD',
+                'TRX': 'TRX-USD',
+                'DOGE': 'DOGE-USD',
+                'ADA': 'ADA-USD',
+                'LTC': 'LTC-USD',
+                'DOT': 'DOT-USD',
+                'MATIC': 'MATIC-USD',
+                'AVAX': 'AVAX-USD',
+                'LINK': 'LINK-USD'
+            }
+            
             for symbol in symbols:
                 try:
-                    # Get symbol ID from CoinMarketCap
-                    symbol_id = self._get_crypto_symbol_id(symbol)
+                    # Get Yahoo Finance symbol
+                    yf_symbol = yahoo_crypto_map.get(symbol, f'{symbol}-USD')
                     
-                    if symbol_id:
-                        # Fetch historical data
-                        historical_data = self._fetch_crypto_historical_data(symbol_id, period)
+                    # Fetch data using Yahoo Finance (same as stocks)
+                    ticker = yf.Ticker(yf_symbol)
+                    hist_data = ticker.history(period=period, interval=interval)
+                    
+                    if not hist_data.empty:
+                        # Standardize column names
+                        hist_data.columns = [col.lower() for col in hist_data.columns]
                         
-                        if historical_data is not None:
-                            crypto_data[symbol] = historical_data
-                        else:
-                            # Fallback to current price data
-                            current_data = self._fetch_crypto_current_price(symbol)
-                            if current_data is not None:
-                                crypto_data[symbol] = current_data
+                        # Select only OHLCV data
+                        ohlcv_data = hist_data[['open', 'high', 'low', 'close', 'volume']].copy()
+                        
+                        crypto_data[symbol] = ohlcv_data
+                        print(f"✅ Fetched {len(ohlcv_data)} data points for {symbol}")
+                        
+                        # Small delay to avoid rate limiting
+                        time.sleep(0.1)
+                    else:
+                        print(f"⚠️ No data found for {symbol} ({yf_symbol})")
                     
                 except Exception as e:
-                    print(f"Error fetching data for {symbol}: {str(e)}")
+                    print(f"❌ Error fetching data for {symbol}: {str(e)}")
                     continue
             
             return crypto_data
