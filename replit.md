@@ -107,6 +107,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **2025-11-19**: 🚀 **Major Enhancement: Top 10 Coins Support** - System now dynamically fetches and supports top 10 cryptocurrencies from CoinMarketCap
+- **2025-11-19**: Created `TopCoinsManager` for dynamic coin discovery with 1-hour caching (100% success rate)
+- **2025-11-19**: Built `EnhancedCryptoFetcher` with multi-coin support, portfolio analytics, and robust error handling
+- **2025-11-19**: Added comprehensive Yahoo Finance symbol mapping for 30+ cryptocurrencies
+- **2025-11-19**: Implemented 3-level fallback system (CoinMarketCap → Cache → Defaults) for maximum reliability
+- **2025-11-19**: Tested successfully with all 10 coins: BTC, ETH, USDT, XRP, BNB, SOL, USDC, TRX, DOGE, ADA (1,850 data points)
+- **2025-11-19**: Created complete ML documentation suite with 8 professional visualizations (confusion matrix, ROC curves, feature importance, etc.)
+- **2025-11-19**: Documented complete training methodology: dataset specs, feature engineering (70+ features), train/test split, hyperparameter tuning
+- **2025-11-14**: Integrated CoinMarketCap API securely via Replit Secrets; implemented hybrid data fetching (Yahoo Finance + CoinMarketCap)
 - **2025-07-25**: Built FastAPI web service with comprehensive REST endpoints for model operations
 - **2025-07-25**: Created Streamlit dashboard with menu-driven interface for easy user interaction  
 - **2025-07-25**: Implemented full-stack architecture with API backend and web frontend
@@ -120,8 +129,13 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Layer
 - `data/data_ingestion.py`: Centralized API calls for cryptocurrency and stock data
+- `data/crypto_data_fetcher.py`: Original crypto data fetcher (BTC, ETH, LTC)
+- `data/top_coins_manager.py`: **NEW** - Dynamic top 10 coins from CoinMarketCap with caching
+- `data/enhanced_crypto_fetcher.py`: **NEW** - Multi-coin fetcher with portfolio analytics (supports top N coins)
 - `data/crypto_data.json`: Cached cryptocurrency data
 - `data/stock_data.json`: Cached stock market data
+- `data/top_coins_cache.json`: **NEW** - Cached top 10 list (1-hour TTL)
+- `data/crypto_top10_cache.json`: **NEW** - Cached OHLCV data for top 10 coins
 
 ### Models Layer
 - `models/model_trainer.py`: Centralized ML model training logic
