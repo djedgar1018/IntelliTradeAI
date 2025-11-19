@@ -1,536 +1,635 @@
 """
 Generate ERD (Entity-Relationship Diagram) for IntelliTradeAI
-Shows data entities and relationships in the trading system
+Enhanced version with clearer, easier-to-read diagrams
 """
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, ConnectionPatch
 import os
 
 # Ensure diagrams directory exists
 os.makedirs('diagrams', exist_ok=True)
 
 def create_erd():
-    """Create comprehensive ERD diagram"""
+    """Create comprehensive ERD diagram with improved readability"""
     
-    fig, ax = plt.subplots(figsize=(20, 14))
-    ax.set_xlim(0, 20)
-    ax.set_ylim(0, 14)
+    fig, ax = plt.subplots(figsize=(24, 16))
+    ax.set_xlim(0, 24)
+    ax.set_ylim(0, 16)
     ax.axis('off')
     
-    # Define entities with their attributes
+    # Define entities with ONLY key attributes for clarity
     entities = {
         'Cryptocurrency': {
-            'pos': (2, 11),
-            'attributes': [
-                'PK: symbol (VARCHAR)',
-                'name (VARCHAR)',
-                'cmc_id (INT)',
-                'rank (INT)',
-                'yahoo_symbol (VARCHAR)',
-                'market_cap (DECIMAL)',
-                'last_updated (TIMESTAMP)'
-            ],
-            'color': '#E3F2FD'
+            'pos': (4, 13),
+            'key_attrs': ['symbol', 'name', 'rank'],
+            'other_count': 4,
+            'color': '#E3F2FD',
+            'category': 'Master Data'
         },
         'OHLCV_Data': {
-            'pos': (2, 6.5),
-            'attributes': [
-                'PK: id (INT)',
-                'FK: symbol (VARCHAR)',
-                'date (DATE)',
-                'open (DECIMAL)',
-                'high (DECIMAL)',
-                'low (DECIMAL)',
-                'close (DECIMAL)',
-                'volume (BIGINT)',
-                'source (VARCHAR)'
-            ],
-            'color': '#FFF3E0'
+            'pos': (4, 9),
+            'key_attrs': ['id', 'symbol (FK)', 'date'],
+            'other_count': 6,
+            'color': '#FFF3E0',
+            'category': 'Price Data'
         },
         'Technical_Indicators': {
-            'pos': (7, 6.5),
-            'attributes': [
-                'PK: id (INT)',
-                'FK: ohlcv_id (INT)',
-                'rsi (DECIMAL)',
-                'macd (DECIMAL)',
-                'macd_signal (DECIMAL)',
-                'bb_upper (DECIMAL)',
-                'bb_middle (DECIMAL)',
-                'bb_lower (DECIMAL)',
-                'ema_12 (DECIMAL)',
-                'ema_26 (DECIMAL)',
-                'volume_ratio (DECIMAL)'
-            ],
-            'color': '#E8F5E9'
+            'pos': (10, 9),
+            'key_attrs': ['id', 'ohlcv_id (FK)'],
+            'other_count': 9,
+            'color': '#E8F5E9',
+            'category': 'Analytics'
         },
         'ML_Models': {
-            'pos': (12, 11),
-            'attributes': [
-                'PK: model_id (INT)',
-                'FK: symbol (VARCHAR)',
-                'model_type (VARCHAR)',
-                'version (VARCHAR)',
-                'accuracy (DECIMAL)',
-                'precision (DECIMAL)',
-                'recall (DECIMAL)',
-                'f1_score (DECIMAL)',
-                'roc_auc (DECIMAL)',
-                'trained_date (TIMESTAMP)',
-                'model_path (VARCHAR)'
-            ],
-            'color': '#F3E5F5'
+            'pos': (16, 13),
+            'key_attrs': ['model_id', 'symbol (FK)', 'type'],
+            'other_count': 8,
+            'color': '#F3E5F5',
+            'category': 'AI Models'
         },
         'Training_Sessions': {
-            'pos': (12, 6.5),
-            'attributes': [
-                'PK: session_id (INT)',
-                'FK: model_id (INT)',
-                'train_start (TIMESTAMP)',
-                'train_end (TIMESTAMP)',
-                'train_samples (INT)',
-                'test_samples (INT)',
-                'hyperparameters (JSON)',
-                'status (VARCHAR)'
-            ],
-            'color': '#FCE4EC'
+            'pos': (16, 9),
+            'key_attrs': ['session_id', 'model_id (FK)'],
+            'other_count': 6,
+            'color': '#FCE4EC',
+            'category': 'AI Models'
         },
         'Predictions': {
-            'pos': (17, 11),
-            'attributes': [
-                'PK: prediction_id (INT)',
-                'FK: model_id (INT)',
-                'FK: symbol (VARCHAR)',
-                'prediction_date (TIMESTAMP)',
-                'signal (VARCHAR)',
-                'confidence (DECIMAL)',
-                'predicted_direction (INT)',
-                'actual_direction (INT)',
-                'target_price (DECIMAL)'
-            ],
-            'color': '#FFF9C4'
+            'pos': (22, 13),
+            'key_attrs': ['id', 'model_id (FK)', 'signal'],
+            'other_count': 6,
+            'color': '#FFF9C4',
+            'category': 'Outputs'
         },
         'Portfolio_Performance': {
-            'pos': (17, 6.5),
-            'attributes': [
-                'PK: performance_id (INT)',
-                'FK: symbol (VARCHAR)',
-                'period_start (DATE)',
-                'period_end (DATE)',
-                'total_return_pct (DECIMAL)',
-                'volatility_pct (DECIMAL)',
-                'sharpe_ratio (DECIMAL)',
-                'max_drawdown (DECIMAL)',
-                'win_rate (DECIMAL)'
-            ],
-            'color': '#E0F7FA'
+            'pos': (22, 9),
+            'key_attrs': ['id', 'symbol (FK)', 'returns'],
+            'other_count': 6,
+            'color': '#E0F7FA',
+            'category': 'Outputs'
         },
         'API_Cache': {
-            'pos': (2, 2),
-            'attributes': [
-                'PK: cache_id (INT)',
-                'cache_key (VARCHAR)',
-                'data (JSON)',
-                'created_at (TIMESTAMP)',
-                'expires_at (TIMESTAMP)',
-                'source (VARCHAR)'
-            ],
-            'color': '#EFEBE9'
+            'pos': (4, 4.5),
+            'key_attrs': ['cache_id', 'cache_key'],
+            'other_count': 4,
+            'color': '#EFEBE9',
+            'category': 'Infrastructure'
         },
         'Feature_Engineering': {
-            'pos': (7, 2),
-            'attributes': [
-                'PK: feature_id (INT)',
-                'FK: ohlcv_id (INT)',
-                'momentum_features (JSON)',
-                'volatility_features (JSON)',
-                'pattern_features (JSON)',
-                'lagged_features (JSON)',
-                'target_variable (INT)'
-            ],
-            'color': '#E1F5FE'
+            'pos': (10, 4.5),
+            'key_attrs': ['feature_id', 'ohlcv_id (FK)'],
+            'other_count': 5,
+            'color': '#E1F5FE',
+            'category': 'ML Pipeline'
         },
         'Backtest_Results': {
-            'pos': (12, 2),
-            'attributes': [
-                'PK: backtest_id (INT)',
-                'FK: model_id (INT)',
-                'start_date (DATE)',
-                'end_date (DATE)',
-                'initial_capital (DECIMAL)',
-                'final_capital (DECIMAL)',
-                'total_trades (INT)',
-                'winning_trades (INT)',
-                'losing_trades (INT)',
-                'profit_factor (DECIMAL)'
-            ],
-            'color': '#F1F8E9'
+            'pos': (16, 4.5),
+            'key_attrs': ['backtest_id', 'model_id (FK)'],
+            'other_count': 8,
+            'color': '#F1F8E9',
+            'category': 'Validation'
         }
     }
     
-    # Draw entities
+    # Draw entities with improved styling
     for entity_name, entity_info in entities.items():
         x, y = entity_info['pos']
-        attrs = entity_info['attributes']
+        key_attrs = entity_info['key_attrs']
+        other_count = entity_info['other_count']
         color = entity_info['color']
+        category = entity_info['category']
         
-        # Calculate box height based on number of attributes
-        height = 0.35 + (len(attrs) * 0.18)
+        # Calculate box dimensions
+        width = 4.5
+        attr_height = 0.35
+        header_height = 0.6
+        footer_height = 0.35
+        body_height = len(key_attrs) * attr_height + 0.3
+        total_height = header_height + body_height + footer_height
         
-        # Draw entity box
+        # Draw main entity box with shadow
+        shadow = FancyBboxPatch(
+            (x - width/2 + 0.1, y - total_height/2 - 0.1), width, total_height,
+            boxstyle="round,pad=0.15",
+            edgecolor='none',
+            facecolor='#CCCCCC',
+            linewidth=0,
+            alpha=0.3
+        )
+        ax.add_patch(shadow)
+        
         box = FancyBboxPatch(
-            (x - 1.8, y - height/2), 3.6, height,
-            boxstyle="round,pad=0.1",
-            edgecolor='black',
+            (x - width/2, y - total_height/2), width, total_height,
+            boxstyle="round,pad=0.15",
+            edgecolor='#333333',
             facecolor=color,
-            linewidth=2
+            linewidth=3
         )
         ax.add_patch(box)
         
-        # Draw entity name (header)
-        header_box = FancyBboxPatch(
-            (x - 1.8, y + height/2 - 0.35), 3.6, 0.35,
-            boxstyle="round,pad=0.05",
-            edgecolor='black',
-            facecolor='#37474F',
-            linewidth=2
+        # Draw header
+        header = FancyBboxPatch(
+            (x - width/2, y + total_height/2 - header_height), width, header_height,
+            boxstyle="round,pad=0.1",
+            edgecolor='#333333',
+            facecolor='#1A237E',
+            linewidth=3
         )
-        ax.add_patch(header_box)
+        ax.add_patch(header)
         
-        ax.text(x, y + height/2 - 0.175, entity_name,
-               ha='center', va='center', fontsize=11,
-               weight='bold', color='white')
+        # Entity name - larger and clearer
+        ax.text(x, y + total_height/2 - header_height/2, entity_name,
+               ha='center', va='center', fontsize=15,
+               weight='bold', color='white',
+               family='sans-serif')
         
-        # Draw attributes
-        y_offset = y + height/2 - 0.35 - 0.15
-        for attr in attrs:
-            if attr.startswith('PK:'):
-                ax.text(x - 1.7, y_offset, attr, ha='left', va='center',
-                       fontsize=8, weight='bold', color='#D32F2F',
-                       family='monospace')
-            elif attr.startswith('FK:'):
-                ax.text(x - 1.7, y_offset, attr, ha='left', va='center',
-                       fontsize=8, weight='bold', color='#1976D2',
-                       family='monospace')
+        # Category label
+        ax.text(x, y - total_height/2 + footer_height/2, f'[{category}]',
+               ha='center', va='center', fontsize=9,
+               style='italic', color='#555555')
+        
+        # Draw key attributes - larger font
+        y_offset = y + total_height/2 - header_height - 0.25
+        for attr in key_attrs:
+            if '(FK)' in attr:
+                # Foreign key - blue
+                clean_attr = attr.replace(' (FK)', '')
+                ax.text(x - width/2 + 0.25, y_offset, '🔗 ' + clean_attr,
+                       ha='left', va='center',
+                       fontsize=11, weight='bold', color='#1565C0',
+                       family='sans-serif')
+            elif attr == key_attrs[0]:
+                # Primary key - red
+                ax.text(x - width/2 + 0.25, y_offset, '🔑 ' + attr,
+                       ha='left', va='center',
+                       fontsize=11, weight='bold', color='#C62828',
+                       family='sans-serif')
             else:
-                ax.text(x - 1.7, y_offset, attr, ha='left', va='center',
-                       fontsize=8, family='monospace')
-            y_offset -= 0.18
+                # Regular attribute
+                ax.text(x - width/2 + 0.25, y_offset, '• ' + attr,
+                       ha='left', va='center',
+                       fontsize=11, color='#212121',
+                       family='sans-serif')
+            y_offset -= attr_height
+        
+        # Show count of other attributes
+        if other_count > 0:
+            ax.text(x, y_offset, f'+ {other_count} more fields',
+                   ha='center', va='center',
+                   fontsize=9, style='italic', color='#757575')
     
-    # Define relationships
+    # Define relationships with clearer paths
     relationships = [
-        # One-to-Many relationships
         {
             'from': 'Cryptocurrency',
             'to': 'OHLCV_Data',
-            'label': '1:N\nHas historical\ndata',
-            'from_pos': (2, 10.25),
-            'to_pos': (2, 8.3),
+            'label': '1 : N',
+            'desc': 'has price history',
+            'from_pos': (4, 11.5),
+            'to_pos': (4, 10.5),
             'color': '#1976D2'
         },
         {
             'from': 'OHLCV_Data',
             'to': 'Technical_Indicators',
-            'label': '1:N\nGenerates\nindicators',
-            'from_pos': (3.8, 6.5),
-            'to_pos': (5.2, 6.5),
+            'label': '1 : N',
+            'desc': 'generates indicators',
+            'from_pos': (6.25, 9),
+            'to_pos': (7.75, 9),
             'color': '#388E3C'
         },
         {
             'from': 'OHLCV_Data',
             'to': 'Feature_Engineering',
-            'label': '1:N\nEngineers\nfeatures',
-            'from_pos': (2, 5.0),
-            'to_pos': (7, 3.8),
+            'label': '1 : N',
+            'desc': 'creates features',
+            'from_pos': (4, 7.5),
+            'to_pos': (10, 6),
             'color': '#F57C00'
         },
         {
             'from': 'Cryptocurrency',
             'to': 'ML_Models',
-            'label': '1:N\nHas trained\nmodels',
-            'from_pos': (3.8, 11),
-            'to_pos': (10.2, 11),
+            'label': '1 : N',
+            'desc': 'trains models for',
+            'from_pos': (6.25, 13),
+            'to_pos': (13.75, 13),
             'color': '#7B1FA2'
         },
         {
             'from': 'ML_Models',
             'to': 'Training_Sessions',
-            'label': '1:N\nTrained in\nsessions',
-            'from_pos': (12, 10.25),
-            'to_pos': (12, 8.3),
+            'label': '1 : N',
+            'desc': 'has training sessions',
+            'from_pos': (16, 11.5),
+            'to_pos': (16, 10.5),
             'color': '#C2185B'
         },
         {
             'from': 'ML_Models',
             'to': 'Predictions',
-            'label': '1:N\nGenerates\npredictions',
-            'from_pos': (13.8, 11),
-            'to_pos': (15.2, 11),
-            'color': '#FBC02D'
+            'label': '1 : N',
+            'desc': 'generates predictions',
+            'from_pos': (18.25, 13),
+            'to_pos': (19.75, 13),
+            'color': '#F9A825'
         },
         {
             'from': 'ML_Models',
             'to': 'Backtest_Results',
-            'label': '1:N\nBacktested\nwith results',
-            'from_pos': (12, 10.25),
-            'to_pos': (12, 3.8),
+            'label': '1 : N',
+            'desc': 'backtested with',
+            'from_pos': (16, 11.5),
+            'to_pos': (16, 6),
             'color': '#689F38'
         },
         {
             'from': 'Cryptocurrency',
             'to': 'Portfolio_Performance',
-            'label': '1:N\nHas performance\nmetrics',
-            'from_pos': (3.8, 11),
-            'to_pos': (15.2, 6.5),
+            'label': '1 : N',
+            'desc': 'tracks performance',
+            'from_pos': (6.25, 13),
+            'to_pos': (19.75, 9),
             'color': '#00ACC1'
         },
         {
             'from': 'Cryptocurrency',
             'to': 'API_Cache',
-            'label': '1:N\nCached\ndata',
-            'from_pos': (2, 10.25),
-            'to_pos': (2, 3.8),
+            'label': '1 : N',
+            'desc': 'cached data',
+            'from_pos': (4, 11.5),
+            'to_pos': (4, 6),
             'color': '#5D4037'
-        },
-        {
-            'from': 'Predictions',
-            'to': 'Cryptocurrency',
-            'label': 'N:1\nFor symbol',
-            'from_pos': (17, 10.25),
-            'to_pos': (3.8, 11),
-            'color': '#455A64',
-            'style': 'dashed'
         }
     ]
     
-    # Draw relationships
+    # Draw relationships with improved styling
     for rel in relationships:
         from_pos = rel['from_pos']
         to_pos = rel['to_pos']
         
+        # Draw arrow with better visibility
         arrow = FancyArrowPatch(
             from_pos, to_pos,
             arrowstyle='-|>',
-            mutation_scale=20,
-            linewidth=2,
+            mutation_scale=30,
+            linewidth=3.5,
             color=rel['color'],
             linestyle=rel.get('style', 'solid'),
-            alpha=0.7
+            alpha=0.85,
+            zorder=1
         )
         ax.add_patch(arrow)
         
-        # Add relationship label
+        # Add relationship label with better background
         mid_x = (from_pos[0] + to_pos[0]) / 2
         mid_y = (from_pos[1] + to_pos[1]) / 2
         
-        ax.text(mid_x, mid_y, rel['label'],
+        # Cardinality label (1:N)
+        ax.text(mid_x, mid_y + 0.35, rel['label'],
                ha='center', va='center',
-               fontsize=7, style='italic',
-               bbox=dict(boxstyle='round,pad=0.3',
+               fontsize=12, weight='bold',
+               bbox=dict(boxstyle='round,pad=0.5',
                         facecolor='white',
                         edgecolor=rel['color'],
-                        linewidth=1.5))
+                        linewidth=2.5),
+               zorder=2)
+        
+        # Description label
+        ax.text(mid_x, mid_y - 0.25, rel['desc'],
+               ha='center', va='center',
+               fontsize=9, style='italic',
+               bbox=dict(boxstyle='round,pad=0.3',
+                        facecolor='#F5F5F5',
+                        edgecolor='#CCCCCC',
+                        linewidth=1),
+               zorder=2)
     
-    # Add title
-    ax.text(10, 13.5, 'IntelliTradeAI - Entity Relationship Diagram (ERD)',
-           ha='center', va='center', fontsize=18, weight='bold',
-           bbox=dict(boxstyle='round,pad=0.5',
-                    facecolor='#1565C0',
-                    edgecolor='black',
-                    linewidth=2),
-           color='white')
+    # Add title with better styling
+    title_box = FancyBboxPatch(
+        (4, 14.5), 16, 1,
+        boxstyle="round,pad=0.3",
+        edgecolor='#1A237E',
+        facecolor='#1565C0',
+        linewidth=4
+    )
+    ax.add_patch(title_box)
     
-    # Add legend
-    legend_x = 0.5
-    legend_y = 0.5
+    ax.text(12, 15.2, 'IntelliTradeAI',
+           ha='center', va='center', fontsize=26, weight='bold',
+           color='white', family='sans-serif')
+    ax.text(12, 14.75, 'Entity Relationship Diagram',
+           ha='center', va='center', fontsize=16,
+           color='white', family='sans-serif')
     
-    ax.text(legend_x, legend_y + 1.2, 'Legend:',
-           ha='left', va='top', fontsize=11, weight='bold')
+    # Add enhanced legend
+    legend_x = 1
+    legend_y = 2.5
+    legend_width = 6
+    legend_height = 2
     
-    # PK/FK legend
-    ax.text(legend_x, legend_y + 0.9, 'PK: Primary Key',
-           ha='left', va='top', fontsize=9, color='#D32F2F', weight='bold')
-    ax.text(legend_x, legend_y + 0.6, 'FK: Foreign Key',
-           ha='left', va='top', fontsize=9, color='#1976D2', weight='bold')
+    legend_box = FancyBboxPatch(
+        (legend_x, legend_y - legend_height), legend_width, legend_height,
+        boxstyle="round,pad=0.2",
+        edgecolor='#333333',
+        facecolor='#FAFAFA',
+        linewidth=2.5
+    )
+    ax.add_patch(legend_box)
     
-    # Relationship types
-    ax.text(legend_x, legend_y + 0.3, '1:N = One-to-Many',
-           ha='left', va='top', fontsize=9, style='italic')
-    ax.text(legend_x, legend_y, 'N:1 = Many-to-One',
-           ha='left', va='top', fontsize=9, style='italic')
+    ax.text(legend_x + 0.3, legend_y - 0.3, 'LEGEND',
+           ha='left', va='top', fontsize=13, weight='bold',
+           color='#1A237E')
     
-    # Add metadata
-    ax.text(19.5, 0.3, 'Created: November 19, 2025\nStorage: File-based (JSON)\nDatabase: PostgreSQL (future)',
-           ha='right', va='bottom', fontsize=8, style='italic',
-           color='gray')
+    # Legend items with icons
+    y_pos = legend_y - 0.7
+    ax.text(legend_x + 0.3, y_pos, '🔑  Primary Key',
+           ha='left', va='center', fontsize=11, color='#C62828', weight='bold')
+    
+    y_pos -= 0.35
+    ax.text(legend_x + 0.3, y_pos, '🔗  Foreign Key',
+           ha='left', va='center', fontsize=11, color='#1565C0', weight='bold')
+    
+    y_pos -= 0.35
+    ax.text(legend_x + 0.3, y_pos, '1 : N  One-to-Many',
+           ha='left', va='center', fontsize=11, color='#424242')
+    
+    y_pos -= 0.35
+    ax.text(legend_x + 0.3, y_pos, '•  Regular Attribute',
+           ha='left', va='center', fontsize=11, color='#424242')
+    
+    # Add info box
+    info_x = 17
+    info_y = 2.5
+    info_width = 6
+    info_height = 2
+    
+    info_box = FancyBboxPatch(
+        (info_x, info_y - info_height), info_width, info_height,
+        boxstyle="round,pad=0.2",
+        edgecolor='#333333',
+        facecolor='#FFFDE7',
+        linewidth=2.5
+    )
+    ax.add_patch(info_box)
+    
+    ax.text(info_x + 0.3, info_y - 0.3, 'SYSTEM INFO',
+           ha='left', va='top', fontsize=13, weight='bold',
+           color='#F57F17')
+    
+    info_text = [
+        '10 Entities',
+        '9 Relationships',
+        'PostgreSQL-Ready',
+        'Nov 19, 2025'
+    ]
+    
+    y_pos = info_y - 0.75
+    for text in info_text:
+        ax.text(info_x + 0.3, y_pos, f'• {text}',
+               ha='left', va='center', fontsize=10, color='#424242')
+        y_pos -= 0.35
     
     plt.tight_layout()
     plt.savefig('diagrams/erd_diagram.png', dpi=300, bbox_inches='tight',
                facecolor='white', edgecolor='none')
-    print("✅ ERD diagram saved: diagrams/erd_diagram.png")
+    print("✅ Enhanced ERD diagram saved: diagrams/erd_diagram.png")
     plt.close()
 
 
 def create_simplified_erd():
-    """Create simplified ERD with main entities only"""
+    """Create simplified ERD with improved clarity"""
     
-    fig, ax = plt.subplots(figsize=(16, 10))
-    ax.set_xlim(0, 16)
-    ax.set_ylim(0, 10)
+    fig, ax = plt.subplots(figsize=(20, 12))
+    ax.set_xlim(0, 20)
+    ax.set_ylim(0, 12)
     ax.axis('off')
     
-    # Define simplified entities
+    # Define simplified entities - larger and clearer
     entities = {
-        'Assets': {
-            'pos': (3, 7.5),
-            'attributes': [
-                'symbol (PK)',
-                'name',
-                'rank',
-                'market_cap'
-            ],
-            'color': '#BBDEFB'
+        'Assets\n(Cryptocurrency)': {
+            'pos': (4, 9),
+            'key_attrs': ['🔑 symbol', '• name', '• rank'],
+            'color': '#BBDEFB',
+            'icon': '💎'
         },
-        'Price_Data': {
-            'pos': (3, 4.5),
-            'attributes': [
-                'id (PK)',
-                'symbol (FK)',
-                'date',
-                'OHLCV',
-                'volume'
-            ],
-            'color': '#FFCCBC'
+        'Price Data\n(OHLCV)': {
+            'pos': (4, 5),
+            'key_attrs': ['🔑 id', '🔗 symbol', '• date', '• OHLCV'],
+            'color': '#FFCCBC',
+            'icon': '📊'
         },
-        'Models': {
-            'pos': (8, 7.5),
-            'attributes': [
-                'model_id (PK)',
-                'symbol (FK)',
-                'type',
-                'accuracy',
-                'status'
-            ],
-            'color': '#E1BEE7'
+        'ML Models': {
+            'pos': (10, 9),
+            'key_attrs': ['🔑 model_id', '🔗 symbol', '• type', '• accuracy'],
+            'color': '#E1BEE7',
+            'icon': '🤖'
         },
-        'Predictions': {
-            'pos': (8, 4.5),
-            'attributes': [
-                'id (PK)',
-                'model_id (FK)',
-                'date',
-                'signal',
-                'confidence'
-            ],
-            'color': '#FFF9C4'
+        'Predictions\n(Signals)': {
+            'pos': (10, 5),
+            'key_attrs': ['🔑 id', '🔗 model_id', '• signal', '• confidence'],
+            'color': '#FFF9C4',
+            'icon': '⚡'
         },
-        'Performance': {
-            'pos': (13, 6),
-            'attributes': [
-                'id (PK)',
-                'symbol (FK)',
-                'returns',
-                'volatility',
-                'sharpe_ratio'
-            ],
-            'color': '#B2DFDB'
+        'Performance\n(Portfolio)': {
+            'pos': (16, 7),
+            'key_attrs': ['🔑 id', '🔗 symbol', '• returns', '• volatility'],
+            'color': '#B2DFDB',
+            'icon': '📈'
         }
     }
     
-    # Draw entities
+    # Draw entities with enhanced design
     for entity_name, entity_info in entities.items():
         x, y = entity_info['pos']
-        attrs = entity_info['attributes']
+        key_attrs = entity_info['key_attrs']
         color = entity_info['color']
+        icon = entity_info['icon']
         
-        height = 0.5 + (len(attrs) * 0.25)
+        width = 5
+        attr_height = 0.4
+        header_height = 1.2
+        body_height = len(key_attrs) * attr_height + 0.4
+        total_height = header_height + body_height
         
-        # Entity box
+        # Shadow effect
+        shadow = FancyBboxPatch(
+            (x - width/2 + 0.15, y - total_height/2 - 0.15), width, total_height,
+            boxstyle="round,pad=0.2",
+            edgecolor='none',
+            facecolor='#999999',
+            alpha=0.25
+        )
+        ax.add_patch(shadow)
+        
+        # Main box
         box = FancyBboxPatch(
-            (x - 1.5, y - height/2), 3, height,
-            boxstyle="round,pad=0.1",
-            edgecolor='black',
+            (x - width/2, y - total_height/2), width, total_height,
+            boxstyle="round,pad=0.2",
+            edgecolor='#212121',
             facecolor=color,
-            linewidth=2.5
+            linewidth=3.5
         )
         ax.add_patch(box)
         
         # Header
         header = FancyBboxPatch(
-            (x - 1.5, y + height/2 - 0.5), 3, 0.5,
-            boxstyle="round,pad=0.05",
-            edgecolor='black',
+            (x - width/2, y + total_height/2 - header_height), width, header_height,
+            boxstyle="round,pad=0.15",
+            edgecolor='#212121',
             facecolor='#263238',
-            linewidth=2.5
+            linewidth=3.5
         )
         ax.add_patch(header)
         
-        ax.text(x, y + height/2 - 0.25, entity_name,
-               ha='center', va='center', fontsize=13,
-               weight='bold', color='white')
+        # Icon and entity name
+        ax.text(x, y + total_height/2 - 0.3, icon,
+               ha='center', va='center', fontsize=28)
         
-        # Attributes
-        y_offset = y + height/2 - 0.5 - 0.2
-        for attr in attrs:
-            ax.text(x - 1.4, y_offset, attr, ha='left', va='center',
-                   fontsize=10, family='monospace')
-            y_offset -= 0.25
+        ax.text(x, y + total_height/2 - 0.85, entity_name,
+               ha='center', va='center', fontsize=14,
+               weight='bold', color='white',
+               family='sans-serif')
+        
+        # Attributes with better spacing
+        y_offset = y + total_height/2 - header_height - 0.35
+        for attr in key_attrs:
+            ax.text(x - width/2 + 0.3, y_offset, attr,
+                   ha='left', va='center',
+                   fontsize=12, family='sans-serif',
+                   weight='normal' if '•' in attr else 'bold')
+            y_offset -= attr_height
     
-    # Draw relationships
-    rels = [
-        ((3, 7.0), (3, 5.5), '1:N', '#1976D2'),
-        ((4.5, 7.5), (6.5, 7.5), '1:N', '#7B1FA2'),
-        ((8, 7.0), (8, 5.5), '1:N', '#F57C00'),
-        ((9.5, 7.5), (11.5, 6), '1:N', '#00ACC1'),
-        ((4.5, 4.5), (6.5, 4.5), 'Uses', '#388E3C')
+    # Draw relationships with labels
+    relationships = [
+        {
+            'from_pos': (4, 7.5),
+            'to_pos': (4, 6.5),
+            'label': '1 : N',
+            'desc': 'contains',
+            'color': '#1976D2'
+        },
+        {
+            'from_pos': (6.5, 9),
+            'to_pos': (7.5, 9),
+            'label': '1 : N',
+            'desc': 'trains',
+            'color': '#7B1FA2'
+        },
+        {
+            'from_pos': (10, 7.5),
+            'to_pos': (10, 6.5),
+            'label': '1 : N',
+            'desc': 'produces',
+            'color': '#F57C00'
+        },
+        {
+            'from_pos': (12.5, 9),
+            'to_pos': (13.5, 7),
+            'label': '1 : N',
+            'desc': 'tracks',
+            'color': '#00ACC1'
+        },
+        {
+            'from_pos': (6.5, 5),
+            'to_pos': (7.5, 5),
+            'label': 'uses',
+            'desc': 'data from',
+            'color': '#388E3C'
+        }
     ]
     
-    for from_pos, to_pos, label, color in rels:
+    for rel in relationships:
         arrow = FancyArrowPatch(
-            from_pos, to_pos,
+            rel['from_pos'], rel['to_pos'],
             arrowstyle='-|>',
-            mutation_scale=25,
-            linewidth=3,
-            color=color,
-            alpha=0.8
+            mutation_scale=35,
+            linewidth=4,
+            color=rel['color'],
+            alpha=0.9
         )
         ax.add_patch(arrow)
         
-        mid_x = (from_pos[0] + to_pos[0]) / 2
-        mid_y = (from_pos[1] + to_pos[1]) / 2
-        ax.text(mid_x, mid_y, label,
-               ha='center', va='center', fontsize=10, weight='bold',
-               bbox=dict(boxstyle='round,pad=0.4',
+        mid_x = (rel['from_pos'][0] + rel['to_pos'][0]) / 2
+        mid_y = (rel['from_pos'][1] + rel['to_pos'][1]) / 2
+        
+        # Relationship type
+        ax.text(mid_x, mid_y + 0.4, rel['label'],
+               ha='center', va='center',
+               fontsize=13, weight='bold',
+               bbox=dict(boxstyle='round,pad=0.5',
                         facecolor='white',
-                        edgecolor=color,
-                        linewidth=2))
+                        edgecolor=rel['color'],
+                        linewidth=3))
+        
+        # Description
+        ax.text(mid_x, mid_y - 0.3, rel['desc'],
+               ha='center', va='center',
+               fontsize=10, style='italic',
+               color='#424242')
     
     # Title
-    ax.text(8, 9.3, 'IntelliTradeAI - Simplified ERD',
-           ha='center', va='center', fontsize=20, weight='bold',
-           bbox=dict(boxstyle='round,pad=0.6',
-                    facecolor='#0D47A1',
-                    edgecolor='black',
-                    linewidth=2.5),
-           color='white')
+    title_box = FancyBboxPatch(
+        (3, 10.5), 14, 1.2,
+        boxstyle="round,pad=0.3",
+        edgecolor='#0D47A1',
+        facecolor='#1565C0',
+        linewidth=4
+    )
+    ax.add_patch(title_box)
     
-    # Description
-    desc = "Core Data Model: 5 Main Entities with Relationships"
-    ax.text(8, 8.5, desc,
-           ha='center', va='center', fontsize=12, style='italic')
+    ax.text(10, 11.3, 'IntelliTradeAI - Core Data Model',
+           ha='center', va='center', fontsize=24, weight='bold',
+           color='white')
+    ax.text(10, 10.85, '5 Essential Entities',
+           ha='center', va='center', fontsize=14,
+           color='white', style='italic')
+    
+    # Info panel
+    info_box = FancyBboxPatch(
+        (0.5, 0.5), 19, 2,
+        boxstyle="round,pad=0.2",
+        edgecolor='#424242',
+        facecolor='#F5F5F5',
+        linewidth=2.5
+    )
+    ax.add_patch(info_box)
+    
+    info_items = [
+        ('💎', 'Assets: Top 10 cryptocurrencies'),
+        ('📊', 'Price Data: 1,850+ OHLCV records'),
+        ('🤖', 'ML Models: Random Forest, XGBoost, LSTM'),
+        ('⚡', 'Predictions: BUY/SELL/HOLD signals'),
+        ('📈', 'Performance: Returns & analytics')
+    ]
+    
+    x_spacing = 3.8
+    for i, (icon, text) in enumerate(info_items):
+        x_pos = 1 + (i * x_spacing)
+        ax.text(x_pos, 1.5, icon, ha='left', va='center', fontsize=18)
+        ax.text(x_pos + 0.5, 1.5, text, ha='left', va='center',
+               fontsize=10, family='sans-serif')
     
     plt.tight_layout()
     plt.savefig('diagrams/erd_simplified.png', dpi=300, bbox_inches='tight',
                facecolor='white')
-    print("✅ Simplified ERD saved: diagrams/erd_simplified.png")
+    print("✅ Enhanced simplified ERD saved: diagrams/erd_simplified.png")
     plt.close()
 
 
 if __name__ == '__main__':
-    print("\n📊 Generating ERD Diagrams for IntelliTradeAI...")
-    print("=" * 60)
+    print("\n📊 Generating Enhanced ERD Diagrams for IntelliTradeAI...")
+    print("=" * 70)
+    print("\n🎨 Improvements:")
+    print("  • Larger, more readable fonts")
+    print("  • Better color contrast and visual hierarchy")
+    print("  • Clearer relationship arrows and labels")
+    print("  • Icons and shadows for better visual appeal")
+    print("  • Simplified attribute display (key fields only)")
+    print("  • Enhanced legend and info panels")
+    print("=" * 70)
     
     # Generate comprehensive ERD
     print("\n1. Creating comprehensive ERD (10 entities)...")
@@ -540,8 +639,9 @@ if __name__ == '__main__':
     print("\n2. Creating simplified ERD (5 core entities)...")
     create_simplified_erd()
     
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("✅ All ERD diagrams generated successfully!")
-    print("\nGenerated files:")
-    print("  • diagrams/erd_diagram.png (comprehensive)")
-    print("  • diagrams/erd_simplified.png (simplified)")
+    print("\n📁 Generated files:")
+    print("  • diagrams/erd_diagram.png (comprehensive, easier to read)")
+    print("  • diagrams/erd_simplified.png (simplified, clearer layout)")
+    print("\n💡 View the diagrams to see the improved clarity!")
