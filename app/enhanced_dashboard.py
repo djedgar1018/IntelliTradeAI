@@ -21,6 +21,7 @@ try:
     from blockchain.wallet_manager import SecureWalletManager, PortfolioTracker
     from ai_vision.chart_pattern_recognition import ChartPatternRecognizer
     from ai_advisor.ml_predictor import MLPredictor  # Use real ML predictor
+    from ai_advisor.signal_fusion_engine import SignalFusionEngine  # New unified signal system
     # Try to import the real data ingestion module
     from data.data_ingestion import DataIngestion
     ing = DataIngestion()
@@ -168,6 +169,8 @@ if 'pattern_recognizer' not in st.session_state:
     st.session_state.pattern_recognizer = ChartPatternRecognizer()
 if 'ai_advisor' not in st.session_state:
     st.session_state.ai_advisor = MLPredictor()
+if 'signal_fusion' not in st.session_state:
+    st.session_state.signal_fusion = SignalFusionEngine()
 
 def render_login_page():
     """Render the login/registration page"""
@@ -695,20 +698,33 @@ def render_ai_analysis_page():
                             asset_data = st.session_state.market_data[symbol]
                             
                             with st.expander(f"📈 {symbol} Analysis", expanded=True):
-                                # Get AI recommendation
-                                analysis = st.session_state.ai_advisor.analyze_asset(symbol, asset_data)
-                                rec = analysis['recommendation']
+                                # Get ML prediction and pattern signals separately
+                                ml_analysis = st.session_state.ai_advisor.analyze_asset(symbol, asset_data)
+                                patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(asset_data, symbol)
                                 
-                                # Display recommendation prominently
+                                # Fuse signals using the Signal Fusion Engine
+                                unified_signal = st.session_state.signal_fusion.fuse_signals(
+                                    ml_prediction=ml_analysis,
+                                    pattern_signals=patterns,
+                                    symbol=symbol
+                                )
+                                
+                                rec = unified_signal['recommendation']
+                                
+                                # Display unified recommendation prominently
                                 decision_colors = {
                                     'BUY': '#d4edda', 'DCA_IN': '#cce7ff', 'SELL': '#f8d7da',
                                     'DCA_OUT': '#fff3cd', 'HOLD': '#f8f9fa'
                                 }
                                 
+                                # Add conflict warning icon if signals disagree
+                                conflict_icon = "⚠️ " if unified_signal.get('has_conflict') else ""
+                                
                                 st.markdown(f"""
                                 <div style="background-color: {decision_colors.get(rec['decision'], '#f8f9fa')}; 
-                                            padding: 15px; border-radius: 8px; margin: 10px 0;">
-                                    <h3 style="margin: 0;">🎯 {rec['decision']}</h3>
+                                            padding: 15px; border-radius: 8px; margin: 10px 0; 
+                                            border: {'3px solid #ff6b6b' if unified_signal.get('has_conflict') else '1px solid #ddd'};">
+                                    <h3 style="margin: 0;">{conflict_icon}🎯 UNIFIED SIGNAL: {rec['decision']}</h3>
                                     <p style="margin: 5px 0;"><strong>{rec['action_explanation']}</strong></p>
                                     <p style="margin: 0; color: #666;">
                                         Confidence: {rec['confidence_level']} | Risk: {rec['risk_level']}
@@ -716,23 +732,39 @@ def render_ai_analysis_page():
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
-                                # Pattern recognition
-                                patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(asset_data, symbol)
+                                # Show both perspectives for transparency
+                                col_ml, col_pattern = st.columns(2)
                                 
-                                if patterns:
-                                    st.markdown("**🔍 Detected Chart Patterns:**")
-                                    for pattern in patterns[:2]:  # Show top 2 patterns
-                                        st.write(f"• **{pattern['pattern_type']}**: {pattern['signal']} "
-                                               f"(Confidence: {pattern['confidence']:.1%})")
-                                        st.write(f"  Entry: ${pattern['entry_price']:.2f} | "
-                                               f"Target: ${pattern['target_price']:.2f}")
+                                with col_ml:
+                                    ml_insight = unified_signal.get('ml_insight', {})
+                                    ml_signal_color = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡'}.get(ml_insight.get('signal', 'HOLD'), '⚪')
+                                    st.markdown(f"""
+                                    <div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px; border-left: 4px solid #4a90e2;">
+                                        <strong>🤖 ML Model Insight</strong><br>
+                                        {ml_signal_color} <strong>{ml_insight.get('signal', 'N/A')}</strong> 
+                                        ({ml_insight.get('confidence', 0):.1%} confidence)<br>
+                                        <small>{ml_insight.get('reasoning', 'No reasoning available')[:80]}...</small>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                
+                                with col_pattern:
+                                    pattern_insight = unified_signal.get('pattern_insight', {})
+                                    pattern_signal_color = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡'}.get(pattern_insight.get('signal', 'HOLD'), '⚪')
+                                    st.markdown(f"""
+                                    <div style="background-color: #fff5f0; padding: 10px; border-radius: 5px; border-left: 4px solid #e27a4a;">
+                                        <strong>📊 Pattern Insight</strong><br>
+                                        {pattern_signal_color} <strong>{pattern_insight.get('signal', 'N/A')}</strong> 
+                                        ({pattern_insight.get('confidence', 0):.1%} confidence)<br>
+                                        <small>{pattern_insight.get('reasoning', 'No pattern detected')[:80]}...</small>
+                                    </div>
+                                    """, unsafe_allow_html=True)
                                 
                                 # Key metrics
                                 col_m1, col_m2, col_m3 = st.columns(3)
                                 with col_m1:
-                                    st.metric("Current Price", f"${analysis['current_price']:,.2f}")
+                                    st.metric("Current Price", f"${unified_signal['current_price']:,.2f}")
                                 with col_m2:
-                                    st.metric("24h Change", f"{analysis['price_change_24h']:+.1f}%")
+                                    st.metric("24h Change", f"{unified_signal['price_change_24h']:+.1f}%")
                                 with col_m3:
                                     st.metric("AI Confidence", rec['confidence_level'])
                                 
