@@ -636,7 +636,7 @@ def render_ai_analysis_page():
     st.markdown("### 🤖 AI-Powered Market Analysis")
     
     # Info banner about available assets
-    st.info("📊 **Available Assets:** Top 10 cryptocurrencies + 8 major stocks (AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM). These assets have pre-trained AI models ready for instant analysis!")
+    st.info("📊 **Available Assets:** Top 20 cryptocurrencies + 18 major stocks across all sectors. These assets have pre-trained AI models ready for instant analysis!")
     
     # Load market data
     if 'market_data' not in st.session_state:
@@ -645,14 +645,16 @@ def render_ai_analysis_page():
     # Asset selection
     col1, col2 = st.columns([2, 1])
     
-    # Define available cryptocurrencies (top 10) and stocks WITH TRAINED MODELS
-    top_10_cryptos = ["BTC", "ETH", "USDT", "XRP", "BNB", "SOL", "USDC", "TRX", "DOGE", "ADA"]
-    trained_stocks = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM"]  # Stocks with trained ML models
+    # Define available cryptocurrencies (top 20) and stocks WITH TRAINED MODELS
+    top_20_cryptos = ["BTC", "ETH", "USDT", "XRP", "BNB", "SOL", "USDC", "TRX", "DOGE", "ADA", 
+                      "AVAX", "SHIB", "TON", "DOT", "LINK", "MATIC", "BCH", "LTC", "UNI", "XLM"]
+    trained_stocks = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM",
+                      "WMT", "JNJ", "V", "BAC", "DIS", "NFLX", "INTC", "AMD", "CRM", "ORCL"]  # 18 stocks with trained ML models
     
     with col1:
         selected_symbols = st.multiselect(
             "Select assets to analyze (only assets with trained AI models):",
-            trained_stocks + top_10_cryptos,
+            trained_stocks + top_20_cryptos,
             default=["BTC", "XRP"],
             help="These assets have pre-trained AI models ready for analysis"
         )
@@ -664,8 +666,9 @@ def render_ai_analysis_page():
         if selected_symbols:
             with st.spinner("Running AI analysis on selected assets..."):
                 # Load data for selected symbols
-                # Top 10 cryptocurrencies
-                known_cryptos = ["BTC", "ETH", "USDT", "XRP", "BNB", "SOL", "USDC", "TRX", "DOGE", "ADA"]
+                # Top 20 cryptocurrencies
+                known_cryptos = ["BTC", "ETH", "USDT", "XRP", "BNB", "SOL", "USDC", "TRX", "DOGE", "ADA",
+                                "AVAX", "SHIB", "TON", "DOT", "LINK", "MATIC", "BCH", "LTC", "UNI", "XLM"]
                 crypto_symbols = [s for s in selected_symbols if s in known_cryptos]
                 stock_symbols = [s for s in selected_symbols if s not in known_cryptos]
                 
