@@ -815,8 +815,20 @@ def render_ai_analysis_page():
                                 with col_m3:
                                     st.metric("AI Confidence", rec['confidence_level'])
                                 
-                                # Chart
+                                # Chart with toggles
+                                st.markdown("### 📈 Interactive Price Chart")
+                                
+                                # Toggle controls
+                                col_t1, col_t2 = st.columns(2)
+                                with col_t1:
+                                    show_key_levels = st.checkbox("🎯 Show Key Support/Resistance Levels", value=True, key=f"levels_{symbol}")
+                                with col_t2:
+                                    show_patterns = st.checkbox("📊 Show Chart Patterns", value=True, key=f"patterns_{symbol}")
+                                
+                                # Create enhanced chart
                                 fig = go.Figure()
+                                
+                                # Main price line
                                 fig.add_trace(go.Scatter(
                                     x=asset_data.index,
                                     y=asset_data['close'],
@@ -825,14 +837,120 @@ def render_ai_analysis_page():
                                     line=dict(color='#1f77b4', width=2)
                                 ))
                                 
+                                # Add key support/resistance levels if toggled on
+                                if show_key_levels and 'price_levels' in unified_signal:
+                                    price_levels_data = unified_signal['price_levels']
+                                    key_levels = price_levels_data.get('key_levels', [])
+                                    current_price = unified_signal.get('current_price', 0)
+                                    
+                                    for i, level in enumerate(key_levels, 1):
+                                        level_price = level['price']
+                                        level_type = level['type']
+                                        action = level['action']
+                                        
+                                        # Color coding: support = green, resistance = red
+                                        line_color = '#28a745' if level_type == 'SUPPORT' else '#dc3545'
+                                        
+                                        # Add horizontal line (ray) across the chart
+                                        fig.add_hline(
+                                            y=level_price,
+                                            line_dash="dash",
+                                            line_color=line_color,
+                                            line_width=2,
+                                            opacity=0.7,
+                                            annotation_text=f"{level_type} ${level_price:.2f} - {action}",
+                                            annotation_position="right",
+                                            annotation=dict(
+                                                font=dict(size=10, color=line_color),
+                                                bgcolor="rgba(255,255,255,0.8)",
+                                                bordercolor=line_color,
+                                                borderwidth=1
+                                            )
+                                        )
+                                
+                                # Add chart patterns if toggled on
+                                if show_patterns:
+                                    try:
+                                        # Detect patterns for the current asset
+                                        patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(
+                                            asset_data, symbol
+                                        )
+                                        
+                                        # Add pattern markers to chart
+                                        for pattern in patterns[:3]:  # Show top 3 patterns
+                                            if 'entry_price' in pattern and 'pattern_type' in pattern:
+                                                pattern_signal = pattern.get('signal', 'HOLD')
+                                                pattern_color = {
+                                                    'BUY': '#28a745',
+                                                    'SELL': '#dc3545',
+                                                    'HOLD': '#ffc107'
+                                                }.get(pattern_signal, '#6c757d')
+                                                
+                                                # Add pattern entry point as horizontal line
+                                                fig.add_hline(
+                                                    y=pattern['entry_price'],
+                                                    line_dash="dot",
+                                                    line_color=pattern_color,
+                                                    line_width=1.5,
+                                                    opacity=0.6,
+                                                    annotation_text=f"📊 {pattern['pattern_type']}",
+                                                    annotation_position="left",
+                                                    annotation=dict(
+                                                        font=dict(size=9, color=pattern_color),
+                                                        bgcolor="rgba(255,255,255,0.9)"
+                                                    )
+                                                )
+                                                
+                                                # Add target and stop loss lines if available
+                                                if 'target_price' in pattern:
+                                                    fig.add_hline(
+                                                        y=pattern['target_price'],
+                                                        line_dash="dot",
+                                                        line_color='#17a2b8',
+                                                        line_width=1,
+                                                        opacity=0.4,
+                                                        annotation_text=f"🎯 Target ${pattern['target_price']:.2f}",
+                                                        annotation_position="left",
+                                                        annotation=dict(font=dict(size=8, color='#17a2b8'))
+                                                    )
+                                                
+                                                if 'stop_loss' in pattern:
+                                                    fig.add_hline(
+                                                        y=pattern['stop_loss'],
+                                                        line_dash="dot",
+                                                        line_color='#dc3545',
+                                                        line_width=1,
+                                                        opacity=0.4,
+                                                        annotation_text=f"🛑 Stop ${pattern['stop_loss']:.2f}",
+                                                        annotation_position="left",
+                                                        annotation=dict(font=dict(size=8, color='#dc3545'))
+                                                    )
+                                    except Exception as pattern_error:
+                                        # Silently skip pattern detection errors
+                                        pass
+                                
                                 fig.update_layout(
-                                    title=f"{symbol} Price Chart",
+                                    title=f"{symbol} Price Chart with Key Levels & Patterns",
                                     xaxis_title="Date",
                                     yaxis_title="Price ($)",
-                                    height=300
+                                    height=500,
+                                    hovermode='x unified',
+                                    showlegend=True
                                 )
                                 
                                 st.plotly_chart(fig, use_container_width=True)
+                                
+                                # Legend for visual elements
+                                if show_key_levels or show_patterns:
+                                    st.markdown("""
+                                    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; font-size: 12px;">
+                                        <strong>Chart Legend:</strong>
+                                        <span style="color: #28a745;">● Support (Buy opportunity)</span> | 
+                                        <span style="color: #dc3545;">● Resistance (Sell opportunity)</span> | 
+                                        <span style="color: #17a2b8;">● Target Price</span> | 
+                                        <span style="color: #dc3545;">● Stop Loss</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
                 
                 except Exception as e:
                     st.error(f"Error running analysis: {str(e)}")

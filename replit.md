@@ -112,6 +112,11 @@ Preferred communication style: Simple, everyday language.
 - **2025-11-22**: Implemented smart conflict rules: defaults to HOLD when both systems have high confidence (>65%) but disagree
 - **2025-11-22**: Enhanced dashboard UI to show unified signal with both ML insight and Pattern insight side-by-side for transparency
 - **2025-11-22**: Added visual conflict warnings (red border) when AI systems disagree to protect users from risky trades
+- **2025-11-22**: 📊 **NEW: Interactive Price Chart with Visual Key Levels** - Added horizontal rays showing support/resistance levels on price charts
+- **2025-11-22**: Added toggle controls to show/hide key levels and chart patterns directly on price charts
+- **2025-11-22**: Enhanced chart visualization: green rays = support (buy zones), red rays = resistance (sell zones)
+- **2025-11-22**: Chart patterns now display entry points, target prices, and stop losses as interactive horizontal lines
+- **2025-11-22**: Increased chart height to 500px for better visibility of all visual elements
 - **2025-11-22**: 📈 **MAJOR EXPANSION: Multi-Stock Support** - Trained AI models for 8 major stocks across tech, finance, and other sectors
 - **2025-11-22**: New stock models available: AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM (in addition to 10 cryptocurrencies)
 - **2025-11-22**: Dashboard now supports analysis of 18 total assets (10 crypto + 8 stocks) with pre-trained Random Forest models
