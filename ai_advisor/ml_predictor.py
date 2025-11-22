@@ -9,6 +9,9 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
+# Import feature engineering from model trainer for compatibility
+from models.model_trainer import RobustModelTrainer
+
 class MLPredictor:
     """Generate trading signals using trained ML models"""
     
@@ -39,49 +42,14 @@ class MLPredictor:
             print(f"Error loading model for {symbol}: {e}")
             return None
     
-    def _calculate_features(self, df):
-        """Calculate technical features from OHLCV data"""
-        df = df.copy()
-        
-        # Price changes
-        df['return'] = df['close'].pct_change()
-        df['high_low_pct'] = (df['high'] - df['low']) / df['low']
-        
-        # Moving averages
-        df['ma_5'] = df['close'].rolling(window=5).mean()
-        df['ma_10'] = df['close'].rolling(window=10).mean()
-        df['ma_20'] = df['close'].rolling(window=20).mean()
-        
-        # RSI
-        delta = df['close'].diff()
-        gain = delta.where(delta > 0, 0).rolling(window=14).mean()
-        loss = -delta.where(delta < 0, 0).rolling(window=14).mean()
-        rs = gain / loss
-        df['rsi'] = 100 - (100 / (1 + rs))
-        
-        # MACD
-        ema_12 = df['close'].ewm(span=12).mean()
-        ema_26 = df['close'].ewm(span=26).mean()
-        df['macd'] = ema_12 - ema_26
-        df['macd_signal'] = df['macd'].ewm(span=9).mean()
-        
-        # Bollinger Bands
-        df['bb_middle'] = df['close'].rolling(window=20).mean()
-        bb_std = df['close'].rolling(window=20).std()
-        df['bb_upper'] = df['bb_middle'] + (bb_std * 2)
-        df['bb_lower'] = df['bb_middle'] - (bb_std * 2)
-        
-        # Volume indicators
-        df['volume_change'] = df['volume'].pct_change()
-        df['volume_ma'] = df['volume'].rolling(window=20).mean()
-        
-        # Momentum
-        df['momentum'] = df['close'] - df['close'].shift(4)
-        
-        # Volatility
-        df['volatility'] = df['return'].rolling(window=20).std()
-        
-        return df
+    def _calculate_features(self, df, symbol):
+        """
+        Calculate technical features from OHLCV data
+        Uses RobustModelTrainer's feature engineering for compatibility with trained models
+        """
+        # Use the same feature engineering as training for compatibility
+        trainer = RobustModelTrainer()
+        return trainer.engineer_features(df, symbol)
     
     def predict(self, symbol, data):
         """
@@ -121,7 +89,7 @@ class MLPredictor:
         feature_columns = model_data['feature_columns']
         
         # Calculate features
-        df_features = self._calculate_features(data)
+        df_features = self._calculate_features(data, symbol)
         df_features = df_features.dropna()
         
         if len(df_features) == 0:
@@ -158,16 +126,18 @@ class MLPredictor:
         current_price = float(data['close'].iloc[-1])
         price_change_24h = float(data['close'].pct_change().iloc[-1] * 100)
         
-        # Get technical indicators
+        # Get technical indicators (using features that exist in engineered data)
         latest_row = df_features.iloc[-1]
-        technical_indicators = {
-            'rsi': float(latest_row['rsi']),
-            'macd': float(latest_row['macd']),
-            'ma_5': float(latest_row['ma_5']),
-            'ma_10': float(latest_row['ma_10']),
-            'ma_20': float(latest_row['ma_20']),
-            'volatility': float(latest_row['volatility'])
-        }
+        technical_indicators = {}
+        
+        # Extract available indicators safely
+        for indicator in ['rsi', 'macd', 'macd_signal', 'sma_20', 'ema_12', 'ema_26', 'volume_ratio', 'volatility_20']:
+            if indicator in latest_row:
+                technical_indicators[indicator] = float(latest_row[indicator])
+        
+        # Add volatility (use volatility_20 if available, otherwise default)
+        if 'volatility_20' not in technical_indicators:
+            technical_indicators['volatility_20'] = 0.03
         
         # Determine confidence level and risk
         if confidence >= 0.75:
@@ -178,7 +148,7 @@ class MLPredictor:
             confidence_level = 'Low'
         
         # Risk level based on volatility
-        volatility = technical_indicators['volatility']
+        volatility = technical_indicators.get('volatility_20', 0.03)
         if volatility > 0.05:
             risk_level = 'High'
         elif volatility > 0.03:
@@ -211,10 +181,11 @@ class MLPredictor:
     
     def _generate_explanation(self, signal, indicators, confidence, symbol):
         """Generate human-readable explanation for the signal"""
-        rsi = indicators['rsi']
-        macd = indicators['macd']
-        ma_5 = indicators['ma_5']
-        ma_20 = indicators['ma_20']
+        rsi = indicators.get('rsi', 50)
+        macd = indicators.get('macd', 0)
+        sma_20 = indicators.get('sma_20', 0)
+        ema_12 = indicators.get('ema_12', 0)
+        ema_26 = indicators.get('ema_26', 0)
         
         explanations = []
         
@@ -229,7 +200,7 @@ class MLPredictor:
             if macd > 0:
                 explanations.append("MACD shows bullish momentum")
             
-            if ma_5 > ma_20:
+            if ema_12 > ema_26:
                 explanations.append("Short-term trend is above long-term (bullish)")
             
             explanations.append(f"Model confidence: {confidence:.1%}")
@@ -245,7 +216,7 @@ class MLPredictor:
             if macd < 0:
                 explanations.append("MACD shows bearish momentum")
             
-            if ma_5 < ma_20:
+            if ema_12 < ema_26:
                 explanations.append("Short-term trend is below long-term (bearish)")
             
             explanations.append(f"Model confidence: {confidence:.1%}")
