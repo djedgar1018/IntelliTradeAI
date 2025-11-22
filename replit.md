@@ -112,6 +112,9 @@ Preferred communication style: Simple, everyday language.
 - **2025-11-22**: Implemented smart conflict rules: defaults to HOLD when both systems have high confidence (>65%) but disagree
 - **2025-11-22**: Enhanced dashboard UI to show unified signal with both ML insight and Pattern insight side-by-side for transparency
 - **2025-11-22**: Added visual conflict warnings (red border) when AI systems disagree to protect users from risky trades
+- **2025-11-22**: 📈 **MAJOR EXPANSION: Multi-Stock Support** - Trained AI models for 8 major stocks across tech, finance, and other sectors
+- **2025-11-22**: New stock models available: AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM (in addition to 10 cryptocurrencies)
+- **2025-11-22**: Dashboard now supports analysis of 18 total assets (10 crypto + 8 stocks) with pre-trained Random Forest models
 - **2025-11-22**: 📊 **NEW: Actionable Price Levels for HOLD Signals** - Created `PriceLevelAnalyzer` that calculates 3 key support/resistance levels
 - **2025-11-22**: HOLD signals now show specific price targets with BUY/SELL recommendations at each level (e.g., "BUY at $49.00 support", "SELL at $55.00 resistance")
 - **2025-11-22**: Price levels use technical analysis (swing highs/lows, moving averages, round numbers) with confidence scores

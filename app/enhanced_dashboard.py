@@ -636,7 +636,7 @@ def render_ai_analysis_page():
     st.markdown("### 🤖 AI-Powered Market Analysis")
     
     # Info banner about available assets
-    st.info("📊 **Available Assets:** Top 10 cryptocurrencies + AAPL stock. These assets have pre-trained AI models ready for instant analysis!")
+    st.info("📊 **Available Assets:** Top 10 cryptocurrencies + 8 major stocks (AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM). These assets have pre-trained AI models ready for instant analysis!")
     
     # Load market data
     if 'market_data' not in st.session_state:
@@ -647,7 +647,7 @@ def render_ai_analysis_page():
     
     # Define available cryptocurrencies (top 10) and stocks WITH TRAINED MODELS
     top_10_cryptos = ["BTC", "ETH", "USDT", "XRP", "BNB", "SOL", "USDC", "TRX", "DOGE", "ADA"]
-    trained_stocks = ["AAPL"]  # Only stocks with trained ML models
+    trained_stocks = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM"]  # Stocks with trained ML models
     
     with col1:
         selected_symbols = st.multiselect(
