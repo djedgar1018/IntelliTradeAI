@@ -11,6 +11,12 @@ import json
 import base64
 from typing import Dict, List, Optional
 
+# Import chart tools for TradingView-style analysis
+try:
+    from app.chart_tools import ChartToolbar, render_chart_with_toolbar, create_advanced_chart, calculate_indicators
+except ImportError:
+    from chart_tools import ChartToolbar, render_chart_with_toolbar, create_advanced_chart, calculate_indicators
+
 # Import our new modules with error handling
 import sys
 import os
@@ -498,57 +504,39 @@ def render_stock_portfolio():
     styled_holdings = holdings_df.style.applymap(color_pnl, subset=['Unrealized P&L', 'Day Change'])
     st.dataframe(styled_holdings, use_container_width=True)
     
-    # Individual stock charts
+    # Individual stock charts with TradingView-style toolbar
     st.markdown("### 📊 Stock Performance Charts")
+    st.info("📈 **Extended Data:** Using up to 5 years of historical data for comprehensive analysis and model training")
     
-    selected_stock = st.selectbox("Select stock to analyze:", holdings_df['Symbol'].tolist())
+    all_stocks = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM",
+                  "WMT", "JNJ", "V", "BAC", "DIS", "NFLX", "INTC", "AMD", "CRM", "ORCL"]
     
-    if st.button(f"Load {selected_stock} Analysis"):
-        with st.spinner(f"Loading {selected_stock} data..."):
-            # Simulate loading stock data
+    selected_stock = st.selectbox("Select stock to analyze:", all_stocks, key="stock_perf_select")
+    
+    data_period = st.selectbox("Historical Data Period:", 
+                               ["1 Year", "2 Years", "5 Years", "10 Years", "Max"],
+                               index=2, key="stock_data_period")
+    
+    period_map = {"1 Year": "1y", "2 Years": "2y", "5 Years": "5y", "10 Years": "10y", "Max": "max"}
+    yahoo_period = period_map.get(data_period, "5y")
+    
+    if st.button(f"Load {selected_stock} Analysis", key="load_stock_analysis"):
+        with st.spinner(f"Loading {selected_stock} with {data_period} of data..."):
             try:
-                stock_data = ing.fetch_mixed_data(stock_symbols=[selected_stock], period="1y", interval="1d")
+                stock_data = ing.fetch_mixed_data(stock_symbols=[selected_stock], period=yahoo_period, interval="1d")
                 if stock_data and selected_stock in stock_data:
                     df = stock_data[selected_stock]
+                    st.success(f"Loaded {len(df)} data points for {selected_stock}")
                     
-                    # Create stock chart with AI signals overlay
-                    fig = go.Figure()
-                    
-                    # Candlestick chart
-                    fig.add_trace(go.Candlestick(
-                        x=df.index,
-                        open=df['open'],
-                        high=df['high'],
-                        low=df['low'],
-                        close=df['close'],
-                        name=f'{selected_stock} Price'
-                    ))
+                    # Use TradingView-style chart with toolbar
+                    render_chart_with_toolbar(df, selected_stock, f"stock_{selected_stock}")
                     
                     # Add pattern detection
                     patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(df, selected_stock)
                     
-                    # Add pattern annotations
-                    for pattern in patterns[:3]:  # Show top 3 patterns
-                        if 'entry_price' in pattern:
-                            fig.add_hline(
-                                y=pattern['entry_price'], 
-                                line_dash="dash",
-                                annotation_text=f"{pattern['pattern_type']}: {pattern['signal']}",
-                                annotation_position="top right"
-                            )
-                    
-                    fig.update_layout(
-                        title=f"{selected_stock} Price Chart with AI Pattern Recognition",
-                        xaxis_title="Date",
-                        yaxis_title="Price ($)",
-                        height=500
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                    
                     # Display detected patterns
                     if patterns:
-                        st.markdown("### 🔍 Detected Patterns & Signals")
+                        st.markdown("### 🔍 AI-Detected Patterns & Signals")
                         for i, pattern in enumerate(patterns[:3]):
                             with st.expander(f"Pattern {i+1}: {pattern['pattern_type']} - {pattern['signal']}"):
                                 col1, col2 = st.columns(2)
@@ -640,59 +628,39 @@ def render_crypto_portfolio():
     styled_crypto = crypto_df.style.applymap(color_crypto_pnl, subset=['Unrealized P&L', 'Day Change'])
     st.dataframe(styled_crypto, use_container_width=True)
     
-    # Crypto Performance Charts - matching stock portfolio functionality
+    # Crypto Performance Charts with TradingView-style toolbar
     st.markdown("### 📊 Crypto Performance Charts")
+    st.info("📈 **Extended Data:** Using up to 5 years of historical data for comprehensive analysis and model training")
     
     available_cryptos = ["BTC", "ETH", "USDT", "XRP", "BNB", "SOL", "USDC", "TRX", "DOGE", "ADA", 
                          "AVAX", "SHIB", "TON", "DOT", "LINK", "BCH", "LTC", "XLM", "WTRX", "STETH"]
     
     selected_crypto = st.selectbox("Select cryptocurrency to analyze:", available_cryptos, key="crypto_perf_select")
     
+    crypto_period = st.selectbox("Historical Data Period:", 
+                                 ["1 Year", "2 Years", "5 Years", "Max"],
+                                 index=2, key="crypto_data_period")
+    
+    period_map = {"1 Year": "1y", "2 Years": "2y", "5 Years": "5y", "Max": "max"}
+    yahoo_period = period_map.get(crypto_period, "5y")
+    
     if st.button(f"Load {selected_crypto} Analysis", key="load_crypto_analysis"):
-        with st.spinner(f"Loading {selected_crypto} data..."):
+        with st.spinner(f"Loading {selected_crypto} with {crypto_period} of data..."):
             try:
-                crypto_data = ing.fetch_mixed_data(crypto_symbols=[selected_crypto], period="1y", interval="1d")
+                crypto_data = ing.fetch_mixed_data(crypto_symbols=[selected_crypto], period=yahoo_period, interval="1d")
                 if crypto_data and selected_crypto in crypto_data:
                     df = crypto_data[selected_crypto]
+                    st.success(f"Loaded {len(df)} data points for {selected_crypto}")
                     
-                    # Create crypto chart with AI signals overlay
-                    fig = go.Figure()
-                    
-                    # Candlestick chart
-                    fig.add_trace(go.Candlestick(
-                        x=df.index,
-                        open=df['open'],
-                        high=df['high'],
-                        low=df['low'],
-                        close=df['close'],
-                        name=f'{selected_crypto} Price'
-                    ))
+                    # Use TradingView-style chart with toolbar
+                    render_chart_with_toolbar(df, selected_crypto, f"crypto_{selected_crypto}")
                     
                     # Add pattern detection
                     patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(df, selected_crypto)
                     
-                    # Add pattern annotations
-                    for pattern in patterns[:3]:
-                        if 'entry_price' in pattern:
-                            fig.add_hline(
-                                y=pattern['entry_price'], 
-                                line_dash="dash",
-                                annotation_text=f"{pattern['pattern_type']}: {pattern['signal']}",
-                                annotation_position="top right"
-                            )
-                    
-                    fig.update_layout(
-                        title=f"{selected_crypto} Price Chart with AI Pattern Recognition",
-                        xaxis_title="Date",
-                        yaxis_title="Price ($)",
-                        height=500
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                    
                     # Display detected patterns
                     if patterns:
-                        st.markdown("### 🔍 Detected Patterns & Signals")
+                        st.markdown("### 🔍 AI-Detected Patterns & Signals")
                         for i, pattern in enumerate(patterns[:3]):
                             with st.expander(f"Pattern {i+1}: {pattern['pattern_type']} - {pattern['signal']}"):
                                 col1, col2 = st.columns(2)
@@ -741,7 +709,7 @@ def render_ai_analysis_page():
         )
     
     with col2:
-        analysis_period = st.selectbox("Analysis Period:", ["1M", "3M", "6M", "1Y"])
+        analysis_period = st.selectbox("Analysis Period:", ["1M", "3M", "6M", "1Y", "2Y", "5Y", "Max"], index=4)
         
     if st.button("🚀 Run AI Analysis", use_container_width=True):
         if selected_symbols:
@@ -754,9 +722,9 @@ def render_ai_analysis_page():
                 stock_symbols = [s for s in selected_symbols if s not in known_cryptos]
                 
                 try:
-                    # Convert period format for Yahoo Finance compatibility
-                    period_map = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y"}
-                    yahoo_period = period_map.get(analysis_period, "1y")
+                    # Convert period format for Yahoo Finance compatibility - extended to 5+ years
+                    period_map = {"1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y", "2Y": "2y", "5Y": "5y", "Max": "max"}
+                    yahoo_period = period_map.get(analysis_period, "5y")
                     
                     market_data = ing.fetch_mixed_data(crypto_symbols=crypto_symbols, stock_symbols=stock_symbols, period=yahoo_period, interval="1d")
                     
