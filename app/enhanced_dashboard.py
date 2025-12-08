@@ -709,9 +709,13 @@ def render_ai_analysis_page():
     # Info banner about available assets
     st.info("📊 **Available Assets:** 20 cryptocurrencies + 18 major stocks across all sectors. These 38 assets have pre-trained AI models ready for instant analysis!")
     
-    # Load market data
+    # Initialize session state for AI analysis persistence
     if 'market_data' not in st.session_state:
         st.session_state.market_data = {}
+    if 'ai_analysis_results' not in st.session_state:
+        st.session_state.ai_analysis_results = {}
+    if 'ai_selected_symbols' not in st.session_state:
+        st.session_state.ai_selected_symbols = []
     
     # Asset selection
     col1, col2 = st.columns([2, 1])
@@ -767,261 +771,268 @@ def render_ai_analysis_page():
                             market_data[symbol] = sample_data
                     
                     st.session_state.market_data.update(market_data)
+                    st.session_state.ai_selected_symbols = selected_symbols
                     
-                    # Run AI analysis on each asset
-                    st.markdown("### 📊 AI Analysis Results")
-                    
+                    # Pre-compute all analysis results and store in session state
                     for symbol in selected_symbols:
                         if symbol in st.session_state.market_data:
                             asset_data = st.session_state.market_data[symbol]
-                            
-                            with st.expander(f"📈 {symbol} Analysis", expanded=True):
-                                # Get ML prediction and pattern signals separately
-                                ml_analysis = st.session_state.ai_advisor.analyze_asset(symbol, asset_data)
-                                patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(asset_data, symbol)
-                                
-                                # Fuse signals using the Signal Fusion Engine (pass historical data for price levels)
-                                unified_signal = st.session_state.signal_fusion.fuse_signals(
-                                    ml_prediction=ml_analysis,
-                                    pattern_signals=patterns,
-                                    symbol=symbol,
-                                    historical_data=asset_data
-                                )
-                                
-                                rec = unified_signal['recommendation']
-                                
-                                # Display unified recommendation prominently
-                                decision_colors = {
-                                    'BUY': '#d4edda', 'DCA_IN': '#cce7ff', 'SELL': '#f8d7da',
-                                    'DCA_OUT': '#fff3cd', 'HOLD': '#f8f9fa'
-                                }
-                                
-                                # Add conflict warning icon if signals disagree
-                                conflict_icon = "⚠️ " if unified_signal.get('has_conflict') else ""
-                                
-                                st.markdown(f"""
-                                <div style="background-color: {decision_colors.get(rec['decision'], '#f8f9fa')}; 
-                                            padding: 15px; border-radius: 8px; margin: 10px 0; 
-                                            border: {'3px solid #ff6b6b' if unified_signal.get('has_conflict') else '1px solid #ddd'};">
-                                    <h3 style="margin: 0;">{conflict_icon}🎯 UNIFIED SIGNAL: {rec['decision']}</h3>
-                                    <p style="margin: 5px 0;"><strong>{rec['action_explanation']}</strong></p>
-                                    <p style="margin: 0; color: #666;">
-                                        Confidence: {rec['confidence_level']} | Risk: {rec['risk_level']}
-                                    </p>
-                                </div>
-                                """, unsafe_allow_html=True)
-                                
-                                # Show both perspectives for transparency
-                                col_ml, col_pattern = st.columns(2)
-                                
-                                with col_ml:
-                                    ml_insight = unified_signal.get('ml_insight', {})
-                                    ml_signal_color = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡'}.get(ml_insight.get('signal', 'HOLD'), '⚪')
-                                    st.markdown(f"""
-                                    <div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px; border-left: 4px solid #4a90e2;">
-                                        <strong>🤖 ML Model Insight</strong><br>
-                                        {ml_signal_color} <strong>{ml_insight.get('signal', 'N/A')}</strong> 
-                                        ({ml_insight.get('confidence', 0):.1%} confidence)<br>
-                                        <small>{ml_insight.get('reasoning', 'No reasoning available')[:80]}...</small>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                
-                                with col_pattern:
-                                    pattern_insight = unified_signal.get('pattern_insight', {})
-                                    pattern_signal_color = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡'}.get(pattern_insight.get('signal', 'HOLD'), '⚪')
-                                    st.markdown(f"""
-                                    <div style="background-color: #fff5f0; padding: 10px; border-radius: 5px; border-left: 4px solid #e27a4a;">
-                                        <strong>📊 Pattern Insight</strong><br>
-                                        {pattern_signal_color} <strong>{pattern_insight.get('signal', 'N/A')}</strong> 
-                                        ({pattern_insight.get('confidence', 0):.1%} confidence)<br>
-                                        <small>{pattern_insight.get('reasoning', 'No pattern detected')[:80]}...</small>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                
-                                # Display price levels for HOLD signals
-                                if unified_signal['signal'] == 'HOLD' and 'price_levels' in unified_signal:
-                                    st.markdown("---")
-                                    st.markdown("### 🎯 **Key Price Levels - Actionable Trading Plan**")
-                                    st.markdown("When signal is HOLD, watch these 3 key levels for your next move:")
-                                    
-                                    price_levels_data = unified_signal['price_levels']
-                                    key_levels = price_levels_data['key_levels']
-                                    
-                                    for i, level in enumerate(key_levels, 1):
-                                        action_color = {'BUY': '#28a745', 'SELL': '#dc3545'}.get(level['action'], '#6c757d')
-                                        action_icon = {'BUY': '📈', 'SELL': '📉'}.get(level['action'], '⏸️')
-                                        level_type_icon = {'SUPPORT': '🛡️', 'RESISTANCE': '🚧'}.get(level['type'], '📍')
-                                        
-                                        st.markdown(f"""
-                                        <div style="background-color: #f8f9fa; padding: 12px; border-radius: 8px; margin: 8px 0; 
-                                                    border-left: 4px solid {action_color};">
-                                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                                <div>
-                                                    <strong style="font-size: 16px;">
-                                                        {level_type_icon} Level {i}: ${level['price']:.2f} 
-                                                        <span style="color: #666;">({level['distance_pct']:+.1f}%)</span>
-                                                    </strong>
-                                                </div>
-                                                <div>
-                                                    <span style="background-color: {action_color}; color: white; padding: 4px 12px; 
-                                                                border-radius: 4px; font-weight: bold;">
-                                                        {action_icon} {level['action']}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div style="margin-top: 8px; color: #495057;">
-                                                <small><strong>What to do:</strong> {level['reasoning']}</small>
-                                            </div>
-                                            <div style="margin-top: 4px; color: #6c757d;">
-                                                <small>Confidence: {level['confidence']:.0%} | Type: {level['type']}</small>
-                                            </div>
-                                        </div>
-                                        """, unsafe_allow_html=True)
-                                    
-                                    st.markdown("---")
-                                
-                                # Key metrics
-                                col_m1, col_m2, col_m3 = st.columns(3)
-                                with col_m1:
-                                    st.metric("Current Price", f"${unified_signal['current_price']:,.2f}")
-                                with col_m2:
-                                    st.metric("24h Change", f"{unified_signal['price_change_24h']:+.1f}%")
-                                with col_m3:
-                                    st.metric("AI Confidence", rec['confidence_level'])
-                                
-                                # Full TradingView-style Chart with Toolbar
-                                st.markdown("### 📈 Interactive Price Chart with Technical Indicators")
-                                
-                                # Get chart toolbar and indicator configurations
-                                chart_key = f"ai_analysis_{symbol}"
-                                toolbar_config = ChartToolbar.render_toolbar(chart_key)
-                                indicator_config = ChartToolbar.render_indicator_panel(chart_key)
-                                
-                                # AI-specific toggles
-                                col_t1, col_t2 = st.columns(2)
-                                with col_t1:
-                                    show_key_levels = st.checkbox("🎯 Show Key Support/Resistance Levels", value=True, key=f"levels_{symbol}")
-                                with col_t2:
-                                    show_patterns = st.checkbox("📊 Show Chart Patterns", value=True, key=f"patterns_{symbol}")
-                                
-                                # Create advanced chart using chart_tools
-                                fig, config = create_advanced_chart(
-                                    asset_data, symbol, toolbar_config, indicator_config, chart_key
-                                )
-                                
-                                # Add key support/resistance levels if toggled on
-                                if show_key_levels and 'price_levels' in unified_signal:
-                                    price_levels_data = unified_signal['price_levels']
-                                    key_levels = price_levels_data.get('key_levels', [])
-                                    
-                                    for i, level in enumerate(key_levels, 1):
-                                        level_price = level['price']
-                                        level_type = level['type']
-                                        action = level['action']
-                                        
-                                        # Color coding: support = green, resistance = red
-                                        line_color = '#28a745' if level_type == 'SUPPORT' else '#dc3545'
-                                        
-                                        # Add horizontal line (ray) across the chart
-                                        fig.add_hline(
-                                            y=level_price,
-                                            line_dash="dash",
-                                            line_color=line_color,
-                                            line_width=2,
-                                            opacity=0.7,
-                                            annotation_text=f"{level_type} ${level_price:,.2f} - {action}",
-                                            annotation_position="right",
-                                            annotation=dict(
-                                                font=dict(size=10, color=line_color),
-                                                bgcolor="rgba(255,255,255,0.8)",
-                                                bordercolor=line_color,
-                                                borderwidth=1
-                                            ),
-                                            row=1, col=1
-                                        )
-                                
-                                # Add chart patterns if toggled on
-                                if show_patterns:
-                                    try:
-                                        # Detect patterns for the current asset
-                                        patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(
-                                            asset_data, symbol
-                                        )
-                                        
-                                        # Add pattern markers to chart
-                                        for pattern in patterns[:3]:  # Show top 3 patterns
-                                            if 'entry_price' in pattern and 'pattern_type' in pattern:
-                                                pattern_signal = pattern.get('signal', 'HOLD')
-                                                pattern_color = {
-                                                    'BUY': '#28a745',
-                                                    'SELL': '#dc3545',
-                                                    'HOLD': '#ffc107'
-                                                }.get(pattern_signal, '#6c757d')
-                                                
-                                                # Add pattern entry point as horizontal line
-                                                fig.add_hline(
-                                                    y=pattern['entry_price'],
-                                                    line_dash="dot",
-                                                    line_color=pattern_color,
-                                                    line_width=1.5,
-                                                    opacity=0.6,
-                                                    annotation_text=f"📊 {pattern['pattern_type']}",
-                                                    annotation_position="left",
-                                                    annotation=dict(
-                                                        font=dict(size=9, color=pattern_color),
-                                                        bgcolor="rgba(255,255,255,0.9)"
-                                                    ),
-                                                    row=1, col=1
-                                                )
-                                                
-                                                # Add target and stop loss lines if available
-                                                if 'target_price' in pattern:
-                                                    fig.add_hline(
-                                                        y=pattern['target_price'],
-                                                        line_dash="dot",
-                                                        line_color='#17a2b8',
-                                                        line_width=1,
-                                                        opacity=0.4,
-                                                        annotation_text=f"🎯 Target ${pattern['target_price']:,.2f}",
-                                                        annotation_position="left",
-                                                        annotation=dict(font=dict(size=8, color='#17a2b8')),
-                                                        row=1, col=1
-                                                    )
-                                                
-                                                if 'stop_loss' in pattern:
-                                                    fig.add_hline(
-                                                        y=pattern['stop_loss'],
-                                                        line_dash="dot",
-                                                        line_color='#dc3545',
-                                                        line_width=1,
-                                                        opacity=0.4,
-                                                        annotation_text=f"🛑 Stop ${pattern['stop_loss']:,.2f}",
-                                                        annotation_position="left",
-                                                        annotation=dict(font=dict(size=8, color='#dc3545')),
-                                                        row=1, col=1
-                                                    )
-                                    except Exception as pattern_error:
-                                        # Silently skip pattern detection errors
-                                        pass
-                                
-                                st.plotly_chart(fig, use_container_width=True, config=config)
-                                
-                                # Legend for visual elements
-                                if show_key_levels or show_patterns:
-                                    st.markdown("""
-                                    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; font-size: 12px;">
-                                        <strong>Chart Legend:</strong>
-                                        <span style="color: #28a745;">● Support (Buy opportunity)</span> | 
-                                        <span style="color: #dc3545;">● Resistance (Sell opportunity)</span> | 
-                                        <span style="color: #17a2b8;">● Target Price</span> | 
-                                        <span style="color: #dc3545;">● Stop Loss</span>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                
+                            ml_analysis = st.session_state.ai_advisor.analyze_asset(symbol, asset_data)
+                            patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(asset_data, symbol)
+                            unified_signal = st.session_state.signal_fusion.fuse_signals(
+                                ml_prediction=ml_analysis,
+                                pattern_signals=patterns,
+                                symbol=symbol,
+                                historical_data=asset_data
+                            )
+                            st.session_state.ai_analysis_results[symbol] = unified_signal
+                    
+                    st.success(f"Analysis complete for {len(selected_symbols)} assets!")
+                    
                 except Exception as e:
                     st.error(f"Error running analysis: {str(e)}")
         else:
             st.warning("Please select at least one asset to analyze")
+    
+    # Display results outside button block so they persist across checkbox clicks
+    if st.session_state.ai_selected_symbols and st.session_state.ai_analysis_results:
+        st.markdown("### 📊 AI Analysis Results")
+        
+        for symbol in st.session_state.ai_selected_symbols:
+            if symbol in st.session_state.market_data and symbol in st.session_state.ai_analysis_results:
+                asset_data = st.session_state.market_data[symbol]
+                unified_signal = st.session_state.ai_analysis_results[symbol]
+                
+                with st.expander(f"📈 {symbol} Analysis", expanded=True):
+                    rec = unified_signal['recommendation']
+                    
+                    # Display unified recommendation prominently
+                    decision_colors = {
+                        'BUY': '#d4edda', 'DCA_IN': '#cce7ff', 'SELL': '#f8d7da',
+                        'DCA_OUT': '#fff3cd', 'HOLD': '#f8f9fa'
+                    }
+                    
+                    # Add conflict warning icon if signals disagree
+                    conflict_icon = "⚠️ " if unified_signal.get('has_conflict') else ""
+                    
+                    st.markdown(f"""
+                    <div style="background-color: {decision_colors.get(rec['decision'], '#f8f9fa')}; 
+                                padding: 15px; border-radius: 8px; margin: 10px 0; 
+                                border: {'3px solid #ff6b6b' if unified_signal.get('has_conflict') else '1px solid #ddd'};">
+                        <h3 style="margin: 0;">{conflict_icon}🎯 UNIFIED SIGNAL: {rec['decision']}</h3>
+                        <p style="margin: 5px 0;"><strong>{rec['action_explanation']}</strong></p>
+                        <p style="margin: 0; color: #666;">
+                            Confidence: {rec['confidence_level']} | Risk: {rec['risk_level']}
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Show both perspectives for transparency
+                    col_ml, col_pattern = st.columns(2)
+                    
+                    with col_ml:
+                        ml_insight = unified_signal.get('ml_insight', {})
+                        ml_signal_color = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡'}.get(ml_insight.get('signal', 'HOLD'), '⚪')
+                        st.markdown(f"""
+                        <div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px; border-left: 4px solid #4a90e2;">
+                            <strong>🤖 ML Model Insight</strong><br>
+                            {ml_signal_color} <strong>{ml_insight.get('signal', 'N/A')}</strong> 
+                            ({ml_insight.get('confidence', 0):.1%} confidence)<br>
+                            <small>{ml_insight.get('reasoning', 'No reasoning available')[:80]}...</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with col_pattern:
+                        pattern_insight = unified_signal.get('pattern_insight', {})
+                        pattern_signal_color = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡'}.get(pattern_insight.get('signal', 'HOLD'), '⚪')
+                        st.markdown(f"""
+                        <div style="background-color: #fff5f0; padding: 10px; border-radius: 5px; border-left: 4px solid #e27a4a;">
+                            <strong>📊 Pattern Insight</strong><br>
+                            {pattern_signal_color} <strong>{pattern_insight.get('signal', 'N/A')}</strong> 
+                            ({pattern_insight.get('confidence', 0):.1%} confidence)<br>
+                            <small>{pattern_insight.get('reasoning', 'No pattern detected')[:80]}...</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    # Display price levels for HOLD signals
+                    if unified_signal['signal'] == 'HOLD' and 'price_levels' in unified_signal:
+                        st.markdown("---")
+                        st.markdown("### 🎯 **Key Price Levels - Actionable Trading Plan**")
+                        st.markdown("When signal is HOLD, watch these 3 key levels for your next move:")
+                        
+                        price_levels_data = unified_signal['price_levels']
+                        key_levels = price_levels_data['key_levels']
+                        
+                        for i, level in enumerate(key_levels, 1):
+                            action_color = {'BUY': '#28a745', 'SELL': '#dc3545'}.get(level['action'], '#6c757d')
+                            action_icon = {'BUY': '📈', 'SELL': '📉'}.get(level['action'], '⏸️')
+                            level_type_icon = {'SUPPORT': '🛡️', 'RESISTANCE': '🚧'}.get(level['type'], '📍')
+                            
+                            st.markdown(f"""
+                            <div style="background-color: #f8f9fa; padding: 12px; border-radius: 8px; margin: 8px 0; 
+                                        border-left: 4px solid {action_color};">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong style="font-size: 16px;">
+                                            {level_type_icon} Level {i}: ${level['price']:,.2f} 
+                                            <span style="color: #666;">({level['distance_pct']:+.1f}%)</span>
+                                        </strong>
+                                    </div>
+                                    <div>
+                                        <span style="background-color: {action_color}; color: white; padding: 4px 12px; 
+                                                    border-radius: 4px; font-weight: bold;">
+                                            {action_icon} {level['action']}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 8px; color: #495057;">
+                                    <small><strong>What to do:</strong> {level['reasoning']}</small>
+                                </div>
+                                <div style="margin-top: 4px; color: #6c757d;">
+                                    <small>Confidence: {level['confidence']:.0%} | Type: {level['type']}</small>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        st.markdown("---")
+                    
+                    # Key metrics
+                    col_m1, col_m2, col_m3 = st.columns(3)
+                    with col_m1:
+                        st.metric("Current Price", f"${unified_signal['current_price']:,.2f}")
+                    with col_m2:
+                        st.metric("24h Change", f"{unified_signal['price_change_24h']:+.1f}%")
+                    with col_m3:
+                        st.metric("AI Confidence", rec['confidence_level'])
+                    
+                    # Full TradingView-style Chart with Toolbar
+                    st.markdown("### 📈 Interactive Price Chart with Technical Indicators")
+                    
+                    # Get chart toolbar and indicator configurations
+                    chart_key = f"ai_analysis_{symbol}"
+                    toolbar_config = ChartToolbar.render_toolbar(chart_key)
+                    indicator_config = ChartToolbar.render_indicator_panel(chart_key)
+                    
+                    # AI-specific toggles
+                    col_t1, col_t2 = st.columns(2)
+                    with col_t1:
+                        show_key_levels = st.checkbox("🎯 Show Key Support/Resistance Levels", value=True, key=f"levels_{symbol}")
+                    with col_t2:
+                        show_patterns = st.checkbox("📊 Show Chart Patterns", value=True, key=f"patterns_{symbol}")
+                    
+                    # Create advanced chart using chart_tools
+                    fig, config = create_advanced_chart(
+                        asset_data, symbol, toolbar_config, indicator_config, chart_key
+                    )
+                    
+                    # Add key support/resistance levels if toggled on
+                    if show_key_levels and 'price_levels' in unified_signal:
+                        price_levels_data = unified_signal['price_levels']
+                        key_levels = price_levels_data.get('key_levels', [])
+                        
+                        for i, level in enumerate(key_levels, 1):
+                            level_price = level['price']
+                            level_type = level['type']
+                            action = level['action']
+                            
+                            # Color coding: support = green, resistance = red
+                            line_color = '#28a745' if level_type == 'SUPPORT' else '#dc3545'
+                            
+                            # Add horizontal line (ray) across the chart
+                            fig.add_hline(
+                                y=level_price,
+                                line_dash="dash",
+                                line_color=line_color,
+                                line_width=2,
+                                opacity=0.7,
+                                annotation_text=f"{level_type} ${level_price:,.2f} - {action}",
+                                annotation_position="right",
+                                annotation=dict(
+                                    font=dict(size=10, color=line_color),
+                                    bgcolor="rgba(255,255,255,0.8)",
+                                    bordercolor=line_color,
+                                    borderwidth=1
+                                ),
+                                row=1, col=1
+                            )
+                    
+                    # Add chart patterns if toggled on
+                    if show_patterns:
+                        try:
+                            # Detect patterns for the current asset
+                            patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(
+                                asset_data, symbol
+                            )
+                            
+                            # Add pattern markers to chart
+                            for pattern in patterns[:3]:  # Show top 3 patterns
+                                if 'entry_price' in pattern and 'pattern_type' in pattern:
+                                    pattern_signal = pattern.get('signal', 'HOLD')
+                                    pattern_color = {
+                                        'BUY': '#28a745',
+                                        'SELL': '#dc3545',
+                                        'HOLD': '#ffc107'
+                                    }.get(pattern_signal, '#6c757d')
+                                    
+                                    # Add pattern entry point as horizontal line
+                                    fig.add_hline(
+                                        y=pattern['entry_price'],
+                                        line_dash="dot",
+                                        line_color=pattern_color,
+                                        line_width=1.5,
+                                        opacity=0.6,
+                                        annotation_text=f"📊 {pattern['pattern_type']}",
+                                        annotation_position="left",
+                                        annotation=dict(
+                                            font=dict(size=9, color=pattern_color),
+                                            bgcolor="rgba(255,255,255,0.9)"
+                                        ),
+                                        row=1, col=1
+                                    )
+                                    
+                                    # Add target and stop loss lines if available
+                                    if 'target_price' in pattern:
+                                        fig.add_hline(
+                                            y=pattern['target_price'],
+                                            line_dash="dot",
+                                            line_color='#17a2b8',
+                                            line_width=1,
+                                            opacity=0.4,
+                                            annotation_text=f"🎯 Target ${pattern['target_price']:,.2f}",
+                                            annotation_position="left",
+                                            annotation=dict(font=dict(size=8, color='#17a2b8')),
+                                            row=1, col=1
+                                        )
+                                    
+                                    if 'stop_loss' in pattern:
+                                        fig.add_hline(
+                                            y=pattern['stop_loss'],
+                                            line_dash="dot",
+                                            line_color='#dc3545',
+                                            line_width=1,
+                                            opacity=0.4,
+                                            annotation_text=f"🛑 Stop ${pattern['stop_loss']:,.2f}",
+                                            annotation_position="left",
+                                            annotation=dict(font=dict(size=8, color='#dc3545')),
+                                            row=1, col=1
+                                        )
+                        except Exception as pattern_error:
+                            # Silently skip pattern detection errors
+                            pass
+                    
+                    st.plotly_chart(fig, use_container_width=True, config=config)
+                    
+                    # Legend for visual elements
+                    if show_key_levels or show_patterns:
+                        st.markdown("""
+                        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; font-size: 12px;">
+                            <strong>Chart Legend:</strong>
+                            <span style="color: #28a745;">● Support (Buy opportunity)</span> | 
+                            <span style="color: #dc3545;">● Resistance (Sell opportunity)</span> | 
+                            <span style="color: #17a2b8;">● Target Price</span> | 
+                            <span style="color: #dc3545;">● Stop Loss</span>
+                        </div>
+                        """, unsafe_allow_html=True)
 
 def render_pattern_recognition_page():
     """Render the pattern recognition page"""
