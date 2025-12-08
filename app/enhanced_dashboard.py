@@ -889,33 +889,30 @@ def render_ai_analysis_page():
                                 with col_m3:
                                     st.metric("AI Confidence", rec['confidence_level'])
                                 
-                                # Chart with toggles
-                                st.markdown("### 📈 Interactive Price Chart")
+                                # Full TradingView-style Chart with Toolbar
+                                st.markdown("### 📈 Interactive Price Chart with Technical Indicators")
                                 
-                                # Toggle controls
+                                # Get chart toolbar and indicator configurations
+                                chart_key = f"ai_analysis_{symbol}"
+                                toolbar_config = ChartToolbar.render_toolbar(chart_key)
+                                indicator_config = ChartToolbar.render_indicator_panel(chart_key)
+                                
+                                # AI-specific toggles
                                 col_t1, col_t2 = st.columns(2)
                                 with col_t1:
                                     show_key_levels = st.checkbox("🎯 Show Key Support/Resistance Levels", value=True, key=f"levels_{symbol}")
                                 with col_t2:
                                     show_patterns = st.checkbox("📊 Show Chart Patterns", value=True, key=f"patterns_{symbol}")
                                 
-                                # Create enhanced chart
-                                fig = go.Figure()
-                                
-                                # Main price line
-                                fig.add_trace(go.Scatter(
-                                    x=asset_data.index,
-                                    y=asset_data['close'],
-                                    mode='lines',
-                                    name=f'{symbol} Price',
-                                    line=dict(color='#1f77b4', width=2)
-                                ))
+                                # Create advanced chart using chart_tools
+                                fig, config = create_advanced_chart(
+                                    asset_data, symbol, toolbar_config, indicator_config, chart_key
+                                )
                                 
                                 # Add key support/resistance levels if toggled on
                                 if show_key_levels and 'price_levels' in unified_signal:
                                     price_levels_data = unified_signal['price_levels']
                                     key_levels = price_levels_data.get('key_levels', [])
-                                    current_price = unified_signal.get('current_price', 0)
                                     
                                     for i, level in enumerate(key_levels, 1):
                                         level_price = level['price']
@@ -932,14 +929,15 @@ def render_ai_analysis_page():
                                             line_color=line_color,
                                             line_width=2,
                                             opacity=0.7,
-                                            annotation_text=f"{level_type} ${level_price:.2f} - {action}",
+                                            annotation_text=f"{level_type} ${level_price:,.2f} - {action}",
                                             annotation_position="right",
                                             annotation=dict(
                                                 font=dict(size=10, color=line_color),
                                                 bgcolor="rgba(255,255,255,0.8)",
                                                 bordercolor=line_color,
                                                 borderwidth=1
-                                            )
+                                            ),
+                                            row=1, col=1
                                         )
                                 
                                 # Add chart patterns if toggled on
@@ -972,7 +970,8 @@ def render_ai_analysis_page():
                                                     annotation=dict(
                                                         font=dict(size=9, color=pattern_color),
                                                         bgcolor="rgba(255,255,255,0.9)"
-                                                    )
+                                                    ),
+                                                    row=1, col=1
                                                 )
                                                 
                                                 # Add target and stop loss lines if available
@@ -983,9 +982,10 @@ def render_ai_analysis_page():
                                                         line_color='#17a2b8',
                                                         line_width=1,
                                                         opacity=0.4,
-                                                        annotation_text=f"🎯 Target ${pattern['target_price']:.2f}",
+                                                        annotation_text=f"🎯 Target ${pattern['target_price']:,.2f}",
                                                         annotation_position="left",
-                                                        annotation=dict(font=dict(size=8, color='#17a2b8'))
+                                                        annotation=dict(font=dict(size=8, color='#17a2b8')),
+                                                        row=1, col=1
                                                     )
                                                 
                                                 if 'stop_loss' in pattern:
@@ -995,24 +995,16 @@ def render_ai_analysis_page():
                                                         line_color='#dc3545',
                                                         line_width=1,
                                                         opacity=0.4,
-                                                        annotation_text=f"🛑 Stop ${pattern['stop_loss']:.2f}",
+                                                        annotation_text=f"🛑 Stop ${pattern['stop_loss']:,.2f}",
                                                         annotation_position="left",
-                                                        annotation=dict(font=dict(size=8, color='#dc3545'))
+                                                        annotation=dict(font=dict(size=8, color='#dc3545')),
+                                                        row=1, col=1
                                                     )
                                     except Exception as pattern_error:
                                         # Silently skip pattern detection errors
                                         pass
                                 
-                                fig.update_layout(
-                                    title=f"{symbol} Price Chart with Key Levels & Patterns",
-                                    xaxis_title="Date",
-                                    yaxis_title="Price ($)",
-                                    height=500,
-                                    hovermode='x unified',
-                                    showlegend=True
-                                )
-                                
-                                st.plotly_chart(fig, use_container_width=True)
+                                st.plotly_chart(fig, use_container_width=True, config=config)
                                 
                                 # Legend for visual elements
                                 if show_key_levels or show_patterns:
