@@ -520,41 +520,52 @@ def render_stock_portfolio():
     period_map = {"1 Year": "1y", "2 Years": "2y", "5 Years": "5y", "10 Years": "10y", "Max": "max"}
     yahoo_period = period_map.get(data_period, "5y")
     
+    # Initialize session state for stock data persistence
+    if 'loaded_stock_data' not in st.session_state:
+        st.session_state.loaded_stock_data = {}
+    if 'loaded_stock_patterns' not in st.session_state:
+        st.session_state.loaded_stock_patterns = {}
+    
     if st.button(f"Load {selected_stock} Analysis", key="load_stock_analysis"):
         with st.spinner(f"Loading {selected_stock} with {data_period} of data..."):
             try:
                 stock_data = ing.fetch_mixed_data(stock_symbols=[selected_stock], period=yahoo_period, interval="1d")
                 if stock_data and selected_stock in stock_data:
                     df = stock_data[selected_stock]
+                    st.session_state.loaded_stock_data[selected_stock] = df
+                    st.session_state.loaded_stock_patterns[selected_stock] = st.session_state.pattern_recognizer.detect_patterns_from_data(df, selected_stock)
                     st.success(f"Loaded {len(df)} data points for {selected_stock}")
-                    
-                    # Use TradingView-style chart with toolbar
-                    render_chart_with_toolbar(df, selected_stock, f"stock_{selected_stock}")
-                    
-                    # Add pattern detection
-                    patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(df, selected_stock)
-                    
-                    # Display detected patterns
-                    if patterns:
-                        st.markdown("### 🔍 AI-Detected Patterns & Signals")
-                        for i, pattern in enumerate(patterns[:3]):
-                            with st.expander(f"Pattern {i+1}: {pattern['pattern_type']} - {pattern['signal']}"):
-                                col1, col2 = st.columns(2)
-                                with col1:
-                                    st.write(f"**Confidence:** {pattern['confidence']:.2%}")
-                                    st.write(f"**Signal:** {pattern['signal']}")
-                                    st.write(f"**Entry Price:** ${pattern['entry_price']:.2f}")
-                                with col2:
-                                    st.write(f"**Target:** ${pattern['target_price']:.2f}")
-                                    st.write(f"**Stop Loss:** ${pattern['stop_loss']:.2f}")
-                                    st.write(f"**Risk/Reward:** {pattern['risk_reward_ratio']:.1f}")
-                                
-                                st.write(f"**Analysis:** {pattern['description']}")
                 else:
                     st.warning(f"Could not load data for {selected_stock}")
                     
             except Exception as e:
                 st.error(f"Error loading stock data: {str(e)}")
+    
+    # Display chart if data is loaded (persists across checkbox clicks)
+    if selected_stock in st.session_state.loaded_stock_data:
+        df = st.session_state.loaded_stock_data[selected_stock]
+        st.info(f"Displaying {len(df)} data points for {selected_stock}")
+        
+        # Use TradingView-style chart with toolbar
+        render_chart_with_toolbar(df, selected_stock, f"stock_{selected_stock}")
+        
+        # Display detected patterns
+        patterns = st.session_state.loaded_stock_patterns.get(selected_stock, [])
+        if patterns:
+            st.markdown("### 🔍 AI-Detected Patterns & Signals")
+            for i, pattern in enumerate(patterns[:3]):
+                with st.expander(f"Pattern {i+1}: {pattern['pattern_type']} - {pattern['signal']}"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"**Confidence:** {pattern['confidence']:.2%}")
+                        st.write(f"**Signal:** {pattern['signal']}")
+                        st.write(f"**Entry Price:** ${pattern['entry_price']:,.2f}")
+                    with col2:
+                        st.write(f"**Target:** ${pattern['target_price']:,.2f}")
+                        st.write(f"**Stop Loss:** ${pattern['stop_loss']:,.2f}")
+                        st.write(f"**Risk/Reward:** {pattern['risk_reward_ratio']:.1f}")
+                    
+                    st.write(f"**Analysis:** {pattern['description']}")
 
 def render_crypto_portfolio():
     """Render the crypto portfolio tab"""
@@ -644,41 +655,52 @@ def render_crypto_portfolio():
     period_map = {"1 Year": "1y", "2 Years": "2y", "5 Years": "5y", "Max": "max"}
     yahoo_period = period_map.get(crypto_period, "5y")
     
+    # Initialize session state for crypto data persistence
+    if 'loaded_crypto_data' not in st.session_state:
+        st.session_state.loaded_crypto_data = {}
+    if 'loaded_crypto_patterns' not in st.session_state:
+        st.session_state.loaded_crypto_patterns = {}
+    
     if st.button(f"Load {selected_crypto} Analysis", key="load_crypto_analysis"):
         with st.spinner(f"Loading {selected_crypto} with {crypto_period} of data..."):
             try:
                 crypto_data = ing.fetch_mixed_data(crypto_symbols=[selected_crypto], period=yahoo_period, interval="1d")
                 if crypto_data and selected_crypto in crypto_data:
                     df = crypto_data[selected_crypto]
+                    st.session_state.loaded_crypto_data[selected_crypto] = df
+                    st.session_state.loaded_crypto_patterns[selected_crypto] = st.session_state.pattern_recognizer.detect_patterns_from_data(df, selected_crypto)
                     st.success(f"Loaded {len(df)} data points for {selected_crypto}")
-                    
-                    # Use TradingView-style chart with toolbar
-                    render_chart_with_toolbar(df, selected_crypto, f"crypto_{selected_crypto}")
-                    
-                    # Add pattern detection
-                    patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(df, selected_crypto)
-                    
-                    # Display detected patterns
-                    if patterns:
-                        st.markdown("### 🔍 AI-Detected Patterns & Signals")
-                        for i, pattern in enumerate(patterns[:3]):
-                            with st.expander(f"Pattern {i+1}: {pattern['pattern_type']} - {pattern['signal']}"):
-                                col1, col2 = st.columns(2)
-                                with col1:
-                                    st.write(f"**Confidence:** {pattern['confidence']:.2%}")
-                                    st.write(f"**Signal:** {pattern['signal']}")
-                                    st.write(f"**Entry Price:** ${pattern['entry_price']:.2f}")
-                                with col2:
-                                    st.write(f"**Target:** ${pattern['target_price']:.2f}")
-                                    st.write(f"**Stop Loss:** ${pattern['stop_loss']:.2f}")
-                                    st.write(f"**Risk/Reward:** {pattern['risk_reward_ratio']:.1f}")
-                                
-                                st.write(f"**Analysis:** {pattern['description']}")
                 else:
                     st.warning(f"Could not load data for {selected_crypto}")
                     
             except Exception as e:
                 st.error(f"Error loading crypto data: {str(e)}")
+    
+    # Display chart if data is loaded (persists across checkbox clicks)
+    if selected_crypto in st.session_state.loaded_crypto_data:
+        df = st.session_state.loaded_crypto_data[selected_crypto]
+        st.info(f"Displaying {len(df)} data points for {selected_crypto}")
+        
+        # Use TradingView-style chart with toolbar
+        render_chart_with_toolbar(df, selected_crypto, f"crypto_{selected_crypto}")
+        
+        # Display detected patterns
+        patterns = st.session_state.loaded_crypto_patterns.get(selected_crypto, [])
+        if patterns:
+            st.markdown("### 🔍 AI-Detected Patterns & Signals")
+            for i, pattern in enumerate(patterns[:3]):
+                with st.expander(f"Pattern {i+1}: {pattern['pattern_type']} - {pattern['signal']}"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"**Confidence:** {pattern['confidence']:.2%}")
+                        st.write(f"**Signal:** {pattern['signal']}")
+                        st.write(f"**Entry Price:** ${pattern['entry_price']:,.2f}")
+                    with col2:
+                        st.write(f"**Target:** ${pattern['target_price']:,.2f}")
+                        st.write(f"**Stop Loss:** ${pattern['stop_loss']:,.2f}")
+                        st.write(f"**Risk/Reward:** {pattern['risk_reward_ratio']:.1f}")
+                    
+                    st.write(f"**Analysis:** {pattern['description']}")
 
 def render_ai_analysis_page():
     """Render the AI analysis page"""
