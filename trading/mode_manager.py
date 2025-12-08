@@ -33,13 +33,19 @@ class TradingModeManager:
             'take_profit_percent': 15.0,
             'max_daily_trades': 10,
             'max_loss_per_day': 500.0,
-            'allowed_asset_types': ['stock', 'crypto', 'option']
+            'allowed_asset_types': ['stock', 'crypto', 'option'],
+            'enabled_assets': []
         }
         self.manual_trade_config = {
             'require_confirmation': True,
             'show_ai_analysis': True,
             'show_risk_metrics': True,
             'alert_on_signal': True
+        }
+        self.asset_modes = {
+            'crypto': 'manual',
+            'stocks': 'manual',
+            'options': 'manual'
         }
     
     def switch_mode(self, new_mode: TradingMode) -> Dict[str, Any]:
@@ -231,3 +237,60 @@ class TradingModeManager:
                 for ts, mode in self.mode_history[-10:]
             ]
         }
+    
+    def set_asset_mode(self, asset_type: str, mode: str) -> Dict[str, Any]:
+        """
+        Set trading mode for a specific asset type
+        
+        Args:
+            asset_type: 'crypto', 'stocks', or 'options'
+            mode: 'manual' or 'automatic'
+            
+        Returns:
+            Confirmation with updated configuration
+        """
+        if asset_type not in self.asset_modes:
+            return {
+                'success': False,
+                'error': f'Unknown asset type: {asset_type}'
+            }
+        
+        if mode not in ['manual', 'automatic']:
+            return {
+                'success': False,
+                'error': f'Invalid mode: {mode}. Must be "manual" or "automatic"'
+            }
+        
+        old_mode = self.asset_modes[asset_type]
+        self.asset_modes[asset_type] = mode
+        
+        if mode == 'automatic':
+            if asset_type not in self.auto_trade_config['enabled_assets']:
+                self.auto_trade_config['enabled_assets'].append(asset_type)
+        else:
+            if asset_type in self.auto_trade_config['enabled_assets']:
+                self.auto_trade_config['enabled_assets'].remove(asset_type)
+        
+        self.auto_trade_config['enabled'] = len(self.auto_trade_config['enabled_assets']) > 0
+        
+        return {
+            'success': True,
+            'asset_type': asset_type,
+            'previous_mode': old_mode,
+            'current_mode': mode,
+            'enabled_assets': self.auto_trade_config['enabled_assets'],
+            'auto_trading_enabled': self.auto_trade_config['enabled'],
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def get_asset_mode(self, asset_type: str) -> str:
+        """Get current trading mode for specific asset type"""
+        return self.asset_modes.get(asset_type, 'manual')
+    
+    def is_asset_auto_enabled(self, asset_type: str) -> bool:
+        """Check if automatic trading is enabled for specific asset type"""
+        return self.asset_modes.get(asset_type, 'manual') == 'automatic'
+    
+    def get_all_asset_modes(self) -> Dict[str, str]:
+        """Get trading modes for all asset types"""
+        return self.asset_modes.copy()

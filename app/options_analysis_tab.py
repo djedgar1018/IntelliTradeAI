@@ -164,7 +164,7 @@ def render_options_chain_display(chain_data: dict, show_greeks: bool):
 
 def render_ai_recommendations(options_fetcher: OptionsDataFetcher, symbol: str, 
                                 strategy: str, trade_executor: TradeExecutor):
-    """Render AI-powered options recommendations"""
+    """Render AI-powered options recommendations with visual popups"""
     st.subheader("🤖 AI Options Recommendations")
     
     with st.spinner("Analyzing options strategies..."):
@@ -173,6 +173,8 @@ def render_ai_recommendations(options_fetcher: OptionsDataFetcher, symbol: str,
     if 'error' in recommendations:
         st.error(recommendations['error'])
         return
+    
+    current_price = recommendations.get('current_price', 100)
     
     col1, col2 = st.columns(2)
     
@@ -184,14 +186,29 @@ def render_ai_recommendations(options_fetcher: OptionsDataFetcher, symbol: str,
             for i, rec in enumerate(call_recs[:3]):
                 with st.container():
                     st.markdown(f"**Option #{i+1}**")
-                    st.write(f"**Strike:** ${rec['strike']:.2f}")
-                    st.write(f"**Premium:** ${rec['premium']:.2f}")
-                    st.write(f"**Delta:** {rec.get('delta', 0):.4f}")
-                    st.write(f"**Breakeven:** ${rec.get('breakeven', 0):.2f}")
-                    st.info(f"💡 {rec['reason']}")
                     
-                    if st.button(f"Trade this Call #{i+1}", key=f"call_{i}"):
-                        execute_option_trade(trade_executor, symbol, 'CALL', rec, recommendations['current_price'])
+                    rec_col1, rec_col2 = st.columns(2)
+                    with rec_col1:
+                        st.write(f"**Strike:** ${rec['strike']:.2f}")
+                        st.write(f"**Premium:** ${rec['premium']:.2f}")
+                    with rec_col2:
+                        st.write(f"**Delta:** {rec.get('delta', 0):.4f}")
+                        st.write(f"**Breakeven:** ${rec.get('breakeven', 0):.2f}")
+                    
+                    with st.expander(f"📊 View Detailed Analysis", expanded=False):
+                        render_options_popup(
+                            symbol=symbol,
+                            option_type='CALL',
+                            strike=rec['strike'],
+                            premium=rec['premium'],
+                            current_price=current_price,
+                            delta=rec.get('delta', 0.5),
+                            recommendation=rec,
+                            popup_key=f"call_{i}"
+                        )
+                    
+                    if st.button(f"✅ Trade Call #{i+1}", key=f"trade_call_{i}", type="primary", use_container_width=True):
+                        execute_option_trade(trade_executor, symbol, 'CALL', rec, current_price)
                     
                     st.markdown("---")
         else:
@@ -205,18 +222,52 @@ def render_ai_recommendations(options_fetcher: OptionsDataFetcher, symbol: str,
             for i, rec in enumerate(put_recs[:3]):
                 with st.container():
                     st.markdown(f"**Option #{i+1}**")
-                    st.write(f"**Strike:** ${rec['strike']:.2f}")
-                    st.write(f"**Premium:** ${rec['premium']:.2f}")
-                    st.write(f"**Delta:** {rec.get('delta', 0):.4f}")
-                    st.write(f"**Breakeven:** ${rec.get('breakeven', 0):.2f}")
-                    st.info(f"💡 {rec['reason']}")
                     
-                    if st.button(f"Trade this Put #{i+1}", key=f"put_{i}"):
-                        execute_option_trade(trade_executor, symbol, 'PUT', rec, recommendations['current_price'])
+                    rec_col1, rec_col2 = st.columns(2)
+                    with rec_col1:
+                        st.write(f"**Strike:** ${rec['strike']:.2f}")
+                        st.write(f"**Premium:** ${rec['premium']:.2f}")
+                    with rec_col2:
+                        st.write(f"**Delta:** {rec.get('delta', 0):.4f}")
+                        st.write(f"**Breakeven:** ${rec.get('breakeven', 0):.2f}")
+                    
+                    with st.expander(f"📊 View Detailed Analysis", expanded=False):
+                        render_options_popup(
+                            symbol=symbol,
+                            option_type='PUT',
+                            strike=rec['strike'],
+                            premium=rec['premium'],
+                            current_price=current_price,
+                            delta=rec.get('delta', -0.5),
+                            recommendation=rec,
+                            popup_key=f"put_{i}"
+                        )
+                    
+                    if st.button(f"✅ Trade Put #{i+1}", key=f"trade_put_{i}", type="primary", use_container_width=True):
+                        execute_option_trade(trade_executor, symbol, 'PUT', rec, current_price)
                     
                     st.markdown("---")
         else:
             st.info("No put recommendations available")
+
+
+def render_options_popup(symbol: str, option_type: str, strike: float, premium: float,
+                          current_price: float, delta: float, recommendation: dict, popup_key: str):
+    """Render the options analysis popup with price projection"""
+    try:
+        from app.ui_components import render_options_recommendation_popup
+        render_options_recommendation_popup(
+            symbol=symbol,
+            option_type=option_type,
+            strike=strike,
+            premium=premium,
+            current_price=current_price,
+            delta=delta,
+            recommendation=recommendation
+        )
+    except Exception as e:
+        st.error(f"Error rendering popup: {str(e)}")
+        st.info(f"💡 {recommendation.get('reason', 'AI recommendation')}")
 
 
 def execute_option_trade(trade_executor: TradeExecutor, symbol: str, option_type: str, 

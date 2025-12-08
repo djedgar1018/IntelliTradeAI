@@ -1364,14 +1364,21 @@ def render_market_sentiment_page():
     try:
         from sentiment.twitter_sentiment import TwitterSentimentAnalyzer
         from sentiment.fear_greed_index import FearGreedIndexAnalyzer
+        from app.ui_components import (
+            create_fear_greed_speedometer, 
+            create_overall_sentiment_gauge,
+            render_fear_greed_legend,
+            render_all_trading_mode_toggles
+        )
         
         sentiment_analyzer = TwitterSentimentAnalyzer()
         fear_greed = FearGreedIndexAnalyzer()
         
-        tab1, tab2 = st.tabs(["📊 Fear & Greed Index", "🐦 Social Sentiment"])
+        tab1, tab2, tab3 = st.tabs(["📊 Fear & Greed Index", "🎛️ Trading Modes", "🐦 Social Sentiment"])
         
         with tab1:
             st.subheader("📊 Fear & Greed Index - All Asset Classes")
+            st.markdown("*Speedometer-style gauges inspired by CoinMarketCap*")
             
             all_indices = fear_greed.get_all_indices()
             
@@ -1379,33 +1386,109 @@ def render_market_sentiment_page():
             
             with col1:
                 crypto_fng = all_indices['crypto']
-                st.markdown(f"### {crypto_fng['emoji']} Crypto")
-                st.metric("Value", crypto_fng['value'], delta=crypto_fng['classification'])
-                st.markdown(f"**{crypto_fng['classification']}**")
+                fig = create_fear_greed_speedometer(
+                    value=crypto_fng['value'],
+                    title="🪙 Crypto",
+                    classification=crypto_fng.get('classification'),
+                    color=crypto_fng.get('color')
+                )
+                st.plotly_chart(fig, use_container_width=True, key="crypto_gauge")
                 st.info(crypto_fng['recommendation'])
             
             with col2:
                 stock_fng = all_indices['stocks']
-                st.markdown(f"### {stock_fng['emoji']} Stocks")
-                st.metric("Value", stock_fng['value'], delta=stock_fng['classification'])
-                st.markdown(f"**{stock_fng['classification']}**")
+                fig = create_fear_greed_speedometer(
+                    value=stock_fng['value'],
+                    title="📈 Stocks",
+                    classification=stock_fng.get('classification'),
+                    color=stock_fng.get('color')
+                )
+                st.plotly_chart(fig, use_container_width=True, key="stocks_gauge")
                 st.info(stock_fng['recommendation'])
             
             with col3:
                 options_fng = all_indices['options']
-                st.markdown(f"### {options_fng['emoji']} Options")
-                st.metric("Value", options_fng['value'], delta=options_fng['classification'])
-                st.markdown(f"**{options_fng['classification']}**")
+                fig = create_fear_greed_speedometer(
+                    value=options_fng['value'],
+                    title="📊 Options",
+                    classification=options_fng.get('classification'),
+                    color=options_fng.get('color')
+                )
+                st.plotly_chart(fig, use_container_width=True, key="options_gauge")
                 st.info(options_fng['recommendation'])
+            
+            render_fear_greed_legend()
             
             st.markdown("---")
             
             overall = all_indices['overall_market_sentiment']
-            st.markdown(f"### {overall['emoji']} Overall Market Sentiment")
-            st.metric("Combined Index", f"{overall['value']}/100", delta=overall['classification'])
+            st.markdown("### 🌍 Overall Market Sentiment")
+            
+            overall_classification = overall.get('classification')
+            overall_value = overall['value']
+            if overall_value <= 25:
+                overall_color = "#EA3943"
+            elif overall_value <= 45:
+                overall_color = "#F5A623"
+            elif overall_value <= 55:
+                overall_color = "#F5D033"
+            elif overall_value <= 75:
+                overall_color = "#93D900"
+            else:
+                overall_color = "#16C784"
+            
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                overall_fig = create_overall_sentiment_gauge(
+                    value=overall['value'],
+                    title="Combined Market Index",
+                    classification=overall_classification,
+                    color=overall_color
+                )
+                st.plotly_chart(overall_fig, use_container_width=True, key="overall_gauge")
+            
             st.success(overall['message'])
         
         with tab2:
+            st.subheader("🎛️ Trading Mode Configuration")
+            st.markdown("Configure manual or automatic trading for each asset class:")
+            
+            trading_modes = render_all_trading_mode_toggles()
+            
+            st.markdown("---")
+            st.markdown("### 📋 Current Configuration")
+            
+            config_col1, config_col2, config_col3 = st.columns(3)
+            
+            with config_col1:
+                mode = trading_modes['crypto']
+                icon = "🤖" if mode == "automatic" else "🚗"
+                st.metric("Crypto Mode", f"{icon} {mode.title()}")
+            
+            with config_col2:
+                mode = trading_modes['stocks']
+                icon = "🤖" if mode == "automatic" else "🚗"
+                st.metric("Stocks Mode", f"{icon} {mode.title()}")
+            
+            with config_col3:
+                mode = trading_modes['options']
+                icon = "🤖" if mode == "automatic" else "🚗"
+                st.metric("Options Mode", f"{icon} {mode.title()}")
+            
+            with st.expander("ℹ️ About Trading Modes"):
+                st.markdown("""
+                **🚗 Manual Mode (AI-Assisted)**
+                - AI provides recommendations and analysis
+                - You make the final decision on all trades
+                - Best for learning and maintaining control
+                
+                **🤖 Automatic Mode (AI Executes)**
+                - AI automatically executes trades when confidence thresholds are met
+                - Trades happen without your confirmation
+                - Best for hands-off trading with strict risk parameters
+                """)
+        
+        with tab3:
             st.subheader("🐦 Social Media Sentiment Analysis")
             
             symbol = st.text_input("Enter Symbol (Stock or Crypto)", value="BTC", help="Enter ticker symbol").upper()
