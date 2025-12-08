@@ -416,14 +416,14 @@ def render_options_recommendation_popup(
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Strike Price", f"${strike:.2f}")
+        st.metric("Strike Price", f"${strike:,.2f}")
     with col2:
-        st.metric("Premium", f"${premium:.2f}")
+        st.metric("Premium", f"${premium:,.2f}")
     with col3:
-        st.metric("Current Price", f"${current_price:.2f}")
+        st.metric("Current Price", f"${current_price:,.2f}")
     with col4:
         breakeven = strike + premium if option_type == 'CALL' else strike - premium
-        st.metric("Breakeven", f"${breakeven:.2f}")
+        st.metric("Breakeven", f"${breakeven:,.2f}")
     
     st.markdown("---")
     

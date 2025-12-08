@@ -191,16 +191,16 @@ def render_open_positions(db: DatabaseManager):
             unrealized_pnl_pct = float(position.get('unrealized_pnl_percent', 0))
             
             col1.metric("Quantity", f"{quantity:.4f}")
-            col2.metric("Avg Entry Price", f"${avg_entry:.2f}")
-            col3.metric("Current Price", f"${current_price:.2f}")
+            col2.metric("Avg Entry Price", f"${avg_entry:,.2f}")
+            col3.metric("Current Price", f"${current_price:,.2f}")
             col4.metric(
                 "Unrealized P&L",
-                f"${unrealized_pnl:.2f}",
+                f"${unrealized_pnl:,.2f}",
                 delta=f"{unrealized_pnl_pct:.2f}%"
             )
             
-            st.metric("Total Invested", f"${total_invested:.2f}")
-            st.metric("Current Value", f"${current_value:.2f}")
+            st.metric("Total Invested", f"${total_invested:,.2f}")
+            st.metric("Current Value", f"${current_value:,.2f}")
             
             if st.button(f"🔴 Close Position {position['symbol']}", key=f"close_{idx}"):
                 close_position_action(db, position)

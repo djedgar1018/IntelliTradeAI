@@ -447,7 +447,7 @@ def render_chart_with_toolbar(
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             current_price = df['close'].iloc[-1] if 'close' in df.columns else 0
-            st.metric("Current Price", f"${current_price:.2f}")
+            st.metric("Current Price", f"${current_price:,.2f}")
         with col2:
             if len(df) > 1:
                 change = ((df['close'].iloc[-1] / df['close'].iloc[-2]) - 1) * 100
@@ -455,10 +455,10 @@ def render_chart_with_toolbar(
         with col3:
             if 'high' in df.columns:
                 high_52w = df['high'].tail(252).max() if len(df) >= 252 else df['high'].max()
-                st.metric("52W High", f"${high_52w:.2f}")
+                st.metric("52W High", f"${high_52w:,.2f}")
         with col4:
             if 'low' in df.columns:
                 low_52w = df['low'].tail(252).min() if len(df) >= 252 else df['low'].min()
-                st.metric("52W Low", f"${low_52w:.2f}")
+                st.metric("52W Low", f"${low_52w:,.2f}")
     else:
         st.warning("No data available for charting")

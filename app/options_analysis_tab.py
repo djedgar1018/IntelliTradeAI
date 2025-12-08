@@ -111,7 +111,7 @@ def render_options_chain_display(chain_data: dict, show_greeks: bool):
     st.subheader(f"📈 {chain_data['symbol']} Options Chain")
     
     col1, col2, col3 = st.columns(3)
-    col1.metric("Current Price", f"${chain_data['current_price']:.2f}")
+    col1.metric("Current Price", f"${chain_data['current_price']:,.2f}")
     col2.metric("Expiration", chain_data['expiration_date'])
     col3.metric("Available Expirations", len(chain_data['available_expirations']))
     
@@ -296,13 +296,13 @@ if 'pending_option_trade' in st.session_state:
     with col1:
         st.write(f"**Symbol:** {trade_details['symbol']}")
         st.write(f"**Type:** {trade_details['option_type']}")
-        st.write(f"**Strike:** ${trade_details['strike']:.2f}")
-        st.write(f"**Premium:** ${trade_details['premium']:.2f}")
+        st.write(f"**Strike:** ${trade_details['strike']:,.2f}")
+        st.write(f"**Premium:** ${trade_details['premium']:,.2f}")
     
     with col2:
         quantity = st.number_input("Number of Contracts", min_value=1, max_value=100, value=1)
         total_cost = trade_details['premium'] * quantity * 100
-        st.metric("Total Cost", f"${total_cost:.2f}")
+        st.metric("Total Cost", f"${total_cost:,.2f}")
     
     col1, col2, col3 = st.columns(3)
     
