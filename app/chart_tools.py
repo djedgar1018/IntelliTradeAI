@@ -316,7 +316,7 @@ def create_advanced_chart(
     if toolbar_config.get('show_trendline'):
         lookback = min(100, len(df))
         recent_df = df.tail(lookback).copy()
-        recent_df = recent_df.reset_index(drop=False)
+        dates = recent_df.index.tolist()
         
         # Find swing lows (local minima)
         lows = recent_df['low'].values
@@ -345,7 +345,7 @@ def create_advanced_chart(
             trend_y = slope * trend_x_range + intercept
             
             # Get corresponding dates
-            trend_dates = recent_df.iloc[first_idx:last_idx + 1]['index'].values
+            trend_dates = [dates[i] for i in range(first_idx, last_idx + 1)]
             
             # Determine trend direction
             trend_direction = "Uptrend" if slope > 0 else "Downtrend"
@@ -363,7 +363,7 @@ def create_advanced_chart(
             )
             
             # Mark swing low points
-            swing_low_dates = recent_df.iloc[swing_low_indices]['index'].values
+            swing_low_dates = [dates[i] for i in swing_low_indices]
             swing_low_prices = lows[swing_low_indices]
             
             fig.add_trace(
