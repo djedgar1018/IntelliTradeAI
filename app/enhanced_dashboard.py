@@ -780,11 +780,17 @@ def render_ai_analysis_page():
                             asset_data = st.session_state.market_data[symbol]
                             ml_analysis = st.session_state.ai_advisor.analyze_asset(symbol, asset_data)
                             patterns = st.session_state.pattern_recognizer.detect_patterns_from_data(asset_data, symbol)
+                            
+                            # Fetch news data for this symbol
+                            news_data = get_news_for_asset(symbol, limit=5)
+                            
+                            # Fuse all three signals: ML + Patterns + News
                             unified_signal = st.session_state.signal_fusion.fuse_signals(
                                 ml_prediction=ml_analysis,
                                 pattern_signals=patterns,
                                 symbol=symbol,
-                                historical_data=asset_data
+                                historical_data=asset_data,
+                                news_data=news_data
                             )
                             st.session_state.ai_analysis_results[symbol] = unified_signal
                     
@@ -828,30 +834,45 @@ def render_ai_analysis_page():
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Show both perspectives for transparency
-                    col_ml, col_pattern = st.columns(2)
+                    # Show all three perspectives for transparency
+                    col_ml, col_pattern, col_news = st.columns(3)
                     
                     with col_ml:
                         ml_insight = unified_signal.get('ml_insight', {})
                         ml_signal_color = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡'}.get(ml_insight.get('signal', 'HOLD'), '⚪')
+                        ml_weight = ml_insight.get('weight', 0.45)
                         st.markdown(f"""
                         <div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px; border-left: 4px solid #4a90e2;">
-                            <strong>🤖 ML Model Insight</strong><br>
+                            <strong>🤖 ML Model</strong> <small style="color:#666;">({ml_weight:.0%} weight)</small><br>
                             {ml_signal_color} <strong>{ml_insight.get('signal', 'N/A')}</strong> 
-                            ({ml_insight.get('confidence', 0):.1%} confidence)<br>
-                            <small>{ml_insight.get('reasoning', 'No reasoning available')[:80]}...</small>
+                            ({ml_insight.get('confidence', 0):.1%})<br>
+                            <small>{ml_insight.get('reasoning', 'No reasoning available')[:60]}...</small>
                         </div>
                         """, unsafe_allow_html=True)
                     
                     with col_pattern:
                         pattern_insight = unified_signal.get('pattern_insight', {})
                         pattern_signal_color = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡'}.get(pattern_insight.get('signal', 'HOLD'), '⚪')
+                        pattern_weight = pattern_insight.get('weight', 0.30)
                         st.markdown(f"""
                         <div style="background-color: #fff5f0; padding: 10px; border-radius: 5px; border-left: 4px solid #e27a4a;">
-                            <strong>📊 Pattern Insight</strong><br>
+                            <strong>📊 Pattern</strong> <small style="color:#666;">({pattern_weight:.0%} weight)</small><br>
                             {pattern_signal_color} <strong>{pattern_insight.get('signal', 'N/A')}</strong> 
-                            ({pattern_insight.get('confidence', 0):.1%} confidence)<br>
-                            <small>{pattern_insight.get('reasoning', 'No pattern detected')[:80]}...</small>
+                            ({pattern_insight.get('confidence', 0):.1%})<br>
+                            <small>{pattern_insight.get('reasoning', 'No pattern detected')[:60]}...</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with col_news:
+                        news_insight = unified_signal.get('news_insight', {})
+                        news_signal_color = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡'}.get(news_insight.get('signal', 'HOLD'), '⚪')
+                        news_weight = news_insight.get('weight', 0.25)
+                        st.markdown(f"""
+                        <div style="background-color: #f0fff5; padding: 10px; border-radius: 5px; border-left: 4px solid #28a745;">
+                            <strong>📰 News</strong> <small style="color:#666;">({news_weight:.0%} weight)</small><br>
+                            {news_signal_color} <strong>{news_insight.get('signal', 'N/A')}</strong> 
+                            ({news_insight.get('confidence', 0):.1%})<br>
+                            <small>{news_insight.get('reasoning', 'No news data')[:60]}...</small>
                         </div>
                         """, unsafe_allow_html=True)
                     

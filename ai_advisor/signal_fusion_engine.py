@@ -1,7 +1,7 @@
 """
 Signal Fusion Engine
-Intelligently combines ML predictions and chart pattern signals
-Resolves conflicts and provides unified trading recommendations
+Intelligently combines ML predictions, chart pattern signals, and news sentiment
+Resolves conflicts and provides unified trading recommendations with full explainability
 """
 
 from dataclasses import dataclass
@@ -15,72 +15,320 @@ class SignalPayload:
     """Unified signal structure for all AI systems"""
     signal: str  # BUY, SELL, HOLD
     confidence: float  # 0.0 to 1.0
-    source: str  # 'ML_MODEL' or 'PATTERN_RECOGNITION'
+    source: str  # 'ML_MODEL', 'PATTERN_RECOGNITION', or 'NEWS_INTELLIGENCE'
     reasoning: str  # Explanation for the signal
     technical_data: Dict  # Additional technical details
 
 
 class SignalFusionEngine:
     """
-    Combines multiple AI signal sources into a unified recommendation
+    Combines three AI signal sources into a unified recommendation:
+    1. ML Model predictions (technical analysis)
+    2. Chart Pattern Recognition (visual patterns)
+    3. News Intelligence (market catalysts and sentiment)
+    
     Handles conflicts and provides transparent reasoning
     """
     
     def __init__(self):
-        # Weighting factors for different signal sources
-        self.ml_base_weight = 0.6  # ML model gets 60% base weight
-        self.pattern_base_weight = 0.4  # Pattern recognition gets 40% base weight
+        # Weighting factors for different signal sources (total = 1.0)
+        self.ml_base_weight = 0.45  # ML model gets 45% base weight
+        self.pattern_base_weight = 0.30  # Pattern recognition gets 30% base weight
+        self.news_base_weight = 0.25  # News intelligence gets 25% base weight
         
         # Conflict thresholds
         self.high_confidence_threshold = 0.65
         self.conflict_gap_threshold = 0.15
         
+        # Signal value mapping for scoring
+        self.signal_values = {'BUY': 1, 'HOLD': 0, 'SELL': -1}
+        
         # Price level analyzer for HOLD signals
         self.price_analyzer = PriceLevelAnalyzer()
     
     def fuse_signals(self, ml_prediction: Dict, pattern_signals: List[Dict], 
-                    symbol: str, historical_data=None) -> Dict:
+                    symbol: str, historical_data=None, news_data: Dict = None) -> Dict:
         """
-        Combine ML prediction and pattern signals into unified recommendation
+        Combine ML prediction, pattern signals, and news sentiment into unified recommendation
         
         Args:
             ml_prediction: Output from MLPredictor
             pattern_signals: List of patterns from ChartPatternRecognizer
-            symbol: Cryptocurrency symbol
+            symbol: Asset symbol
+            historical_data: Historical price data for price level analysis
+            news_data: News intelligence data with sentiment and recommendation
         
         Returns:
-            Unified signal with conflict resolution
+            Unified signal with tri-signal conflict resolution
         """
         # Convert inputs to SignalPayload format
         ml_signal = self._convert_ml_to_payload(ml_prediction)
         pattern_signal = self._convert_patterns_to_payload(pattern_signals)
+        news_signal = self._convert_news_to_payload(news_data)
         
-        # Check for conflicts
-        has_conflict = self._detect_conflict(ml_signal, pattern_signal)
+        # Get all three signals for tri-signal fusion
+        signals = [ml_signal, pattern_signal, news_signal]
         
-        if has_conflict:
-            # Resolve conflict
-            unified_signal = self._resolve_conflict(ml_signal, pattern_signal, ml_prediction, symbol, historical_data)
-        else:
-            # No conflict - combine strengths
-            unified_signal = self._combine_aligned_signals(ml_signal, pattern_signal, ml_prediction, historical_data)
+        # Calculate weighted scores for each signal
+        weights = self._calculate_adjusted_weights(ml_signal, pattern_signal, news_signal, ml_prediction)
         
-        # Add both perspectives for transparency
+        # Perform tri-signal fusion
+        unified_signal = self._fuse_tri_signals(
+            ml_signal, pattern_signal, news_signal,
+            weights, ml_prediction, symbol, historical_data
+        )
+        
+        # Add all perspectives for transparency
         unified_signal['ml_insight'] = {
             'signal': ml_signal.signal,
             'confidence': ml_signal.confidence,
-            'reasoning': ml_signal.reasoning
+            'reasoning': ml_signal.reasoning,
+            'weight': weights['ml']
         }
         
         unified_signal['pattern_insight'] = {
             'signal': pattern_signal.signal,
             'confidence': pattern_signal.confidence,
-            'reasoning': pattern_signal.reasoning
+            'reasoning': pattern_signal.reasoning,
+            'weight': weights['pattern']
         }
         
-        unified_signal['has_conflict'] = has_conflict
+        unified_signal['news_insight'] = {
+            'signal': news_signal.signal,
+            'confidence': news_signal.confidence,
+            'reasoning': news_signal.reasoning,
+            'weight': weights['news']
+        }
+        
+        # Determine conflict type
+        unified_signal['has_conflict'] = self._detect_tri_conflict(ml_signal, pattern_signal, news_signal)
+        unified_signal['conflict_type'] = self._classify_conflict(ml_signal, pattern_signal, news_signal)
         
         return unified_signal
+    
+    def _convert_news_to_payload(self, news_data: Dict) -> SignalPayload:
+        """Convert news sentiment data to SignalPayload format"""
+        if not news_data:
+            return SignalPayload(
+                signal='HOLD',
+                confidence=0.0,
+                source='NEWS_INTELLIGENCE',
+                reasoning='No news data available',
+                technical_data={}
+            )
+        
+        recommendation = news_data.get('recommendation', {})
+        signal = recommendation.get('recommendation', 'HOLD')
+        confidence = recommendation.get('confidence', 0.5)
+        rationale = recommendation.get('rationale', 'News sentiment analysis')
+        
+        # Get catalyst info for context
+        articles = news_data.get('articles', [])
+        high_impact_count = sum(1 for a in articles if a.get('catalyst', {}).get('is_high_impact', False))
+        
+        reasoning = rationale
+        if high_impact_count > 0:
+            reasoning += f" ({high_impact_count} high-impact catalyst{'s' if high_impact_count > 1 else ''} detected)"
+        
+        return SignalPayload(
+            signal=signal,
+            confidence=confidence,
+            source='NEWS_INTELLIGENCE',
+            reasoning=reasoning,
+            technical_data={
+                'article_count': len(articles),
+                'high_impact_count': high_impact_count,
+                'sentiment_breakdown': news_data.get('sentiment_breakdown', {})
+            }
+        )
+    
+    def _calculate_adjusted_weights(self, ml_signal: SignalPayload, pattern_signal: SignalPayload,
+                                    news_signal: SignalPayload, ml_prediction: Dict) -> Dict:
+        """Calculate dynamically adjusted weights based on signal quality"""
+        # Start with base weights
+        ml_weight = self.ml_base_weight
+        pattern_weight = self.pattern_base_weight
+        news_weight = self.news_base_weight
+        
+        # Adjust ML weight by model accuracy
+        ml_metrics = ml_prediction.get('model_metrics', {})
+        ml_accuracy = ml_metrics.get('accuracy', 0.5)
+        ml_weight *= (ml_accuracy / 0.5)  # Scale by accuracy relative to 50%
+        
+        # Adjust pattern weight by confidence
+        if pattern_signal.confidence < 0.3:
+            pattern_weight *= 0.7  # Reduce weight for low confidence patterns
+        elif pattern_signal.confidence > 0.7:
+            pattern_weight *= 1.2  # Boost weight for high confidence patterns
+        
+        # Adjust news weight by number of high-impact catalysts
+        high_impact = news_signal.technical_data.get('high_impact_count', 0)
+        if high_impact > 0:
+            news_weight *= (1 + 0.15 * min(high_impact, 3))  # Up to 45% boost for catalysts
+        
+        # Normalize weights to sum to 1.0
+        total = ml_weight + pattern_weight + news_weight
+        return {
+            'ml': ml_weight / total,
+            'pattern': pattern_weight / total,
+            'news': news_weight / total
+        }
+    
+    def _detect_tri_conflict(self, ml: SignalPayload, pattern: SignalPayload, news: SignalPayload) -> bool:
+        """Detect if any of the three signals conflict"""
+        signals = [s.signal for s in [ml, pattern, news] if s.signal != 'HOLD']
+        if len(signals) < 2:
+            return False
+        return len(set(signals)) > 1  # Conflict if not all the same
+    
+    def _classify_conflict(self, ml: SignalPayload, pattern: SignalPayload, news: SignalPayload) -> str:
+        """Classify the type of conflict"""
+        active_signals = [(s.signal, s.source) for s in [ml, pattern, news] if s.signal != 'HOLD']
+        
+        if len(active_signals) < 2:
+            return 'none'
+        
+        signal_set = set(s[0] for s in active_signals)
+        if len(signal_set) == 1:
+            return 'consensus'  # All agree
+        elif len(active_signals) == 3 and len(signal_set) == 2:
+            return 'majority'  # 2 vs 1
+        elif len(active_signals) == 2 and len(signal_set) == 2:
+            return 'split'  # 1 vs 1 (third is HOLD)
+        else:
+            return 'three_way'  # All three disagree (BUY vs SELL vs HOLD active)
+    
+    def _fuse_tri_signals(self, ml: SignalPayload, pattern: SignalPayload, news: SignalPayload,
+                         weights: Dict, ml_prediction: Dict, symbol: str, historical_data) -> Dict:
+        """Fuse three signals using weighted scoring and consensus logic"""
+        
+        # Calculate weighted score (-1 to 1 scale)
+        ml_value = self.signal_values.get(ml.signal, 0)
+        pattern_value = self.signal_values.get(pattern.signal, 0)
+        news_value = self.signal_values.get(news.signal, 0)
+        
+        weighted_score = (
+            ml_value * ml.confidence * weights['ml'] +
+            pattern_value * pattern.confidence * weights['pattern'] +
+            news_value * news.confidence * weights['news']
+        )
+        
+        # Count votes
+        votes = {'BUY': 0, 'SELL': 0, 'HOLD': 0}
+        for s in [ml, pattern, news]:
+            if s.confidence > 0.3:  # Only count signals with meaningful confidence
+                votes[s.signal] += 1
+        
+        # Determine final signal based on weighted score and consensus
+        conflict_type = self._classify_conflict(ml, pattern, news)
+        
+        if conflict_type == 'consensus':
+            # All active signals agree - boost confidence
+            agreed_signal = ml.signal if ml.signal != 'HOLD' else (pattern.signal if pattern.signal != 'HOLD' else news.signal)
+            avg_conf = np.mean([s.confidence for s in [ml, pattern, news] if s.signal == agreed_signal])
+            final_confidence = min(0.95, avg_conf * 1.15)  # 15% confidence boost
+            final_signal = agreed_signal
+            
+            explanation = (
+                f"✅ STRONG CONSENSUS: All three AI systems agree on {final_signal}. "
+                f"ML Model: {ml.confidence:.0%}, Pattern Recognition: {pattern.confidence:.0%}, "
+                f"News Intelligence: {news.confidence:.0%}. High conviction signal."
+            )
+            risk_level = 'Low'
+            
+        elif conflict_type == 'majority':
+            # 2 vs 1 - go with majority but note dissent
+            majority_signal = 'BUY' if votes['BUY'] >= 2 else ('SELL' if votes['SELL'] >= 2 else 'HOLD')
+            dissenters = [s for s in [ml, pattern, news] if s.signal != majority_signal and s.signal != 'HOLD']
+            
+            # Average confidence of majority
+            majority_confs = [s.confidence for s in [ml, pattern, news] if s.signal == majority_signal]
+            final_confidence = np.mean(majority_confs) * 0.95  # Slight penalty for dissent
+            final_signal = majority_signal
+            
+            dissent_info = ""
+            if dissenters:
+                d = dissenters[0]
+                dissent_info = f"However, {d.source.replace('_', ' ').title()} disagrees with {d.signal} ({d.confidence:.0%}). "
+            
+            explanation = (
+                f"⚖️ MAJORITY DECISION: 2 of 3 systems recommend {final_signal}. {dissent_info}"
+                f"Proceeding with majority view but exercise caution."
+            )
+            risk_level = 'Medium'
+            
+        elif conflict_type == 'split' or conflict_type == 'three_way':
+            # Strong disagreement - use weighted score but be cautious
+            if weighted_score > 0.15:
+                final_signal = 'BUY'
+            elif weighted_score < -0.15:
+                final_signal = 'SELL'
+            else:
+                final_signal = 'HOLD'
+            
+            final_confidence = min(0.7, abs(weighted_score) + 0.3)  # Cap confidence due to disagreement
+            
+            # Build detailed explanation
+            signal_details = []
+            if ml.signal != 'HOLD':
+                signal_details.append(f"ML: {ml.signal} ({ml.confidence:.0%})")
+            if pattern.signal != 'HOLD':
+                signal_details.append(f"Pattern: {pattern.signal} ({pattern.confidence:.0%})")
+            if news.signal != 'HOLD':
+                signal_details.append(f"News: {news.signal} ({news.confidence:.0%})")
+            
+            explanation = (
+                f"⚠️ CONFLICTING SIGNALS: {' vs '.join(signal_details)}. "
+                f"Weighted analysis favors {final_signal} (score: {weighted_score:.2f}). "
+                f"This is a high-risk scenario - consider waiting for clearer signals."
+            )
+            risk_level = 'High'
+            
+        else:
+            # No active signals or all HOLD
+            final_signal = 'HOLD'
+            final_confidence = 0.6
+            explanation = "All systems suggest holding. No clear directional signals detected."
+            risk_level = 'Low'
+        
+        # Determine confidence level label
+        if final_confidence >= 0.75:
+            confidence_level = 'High'
+        elif final_confidence >= 0.55:
+            confidence_level = 'Medium'
+        else:
+            confidence_level = 'Low'
+        
+        result = {
+            'symbol': symbol,
+            'signal': final_signal,
+            'confidence': final_confidence,
+            'weighted_score': weighted_score,
+            'recommendation': {
+                'decision': final_signal,
+                'confidence_level': confidence_level,
+                'risk_level': risk_level,
+                'action_explanation': explanation
+            },
+            'vote_breakdown': votes,
+            'current_price': ml_prediction.get('current_price', 0),
+            'price_change_24h': ml_prediction.get('price_change_24h', 0),
+            'technical_indicators': ml_prediction.get('technical_indicators', {})
+        }
+        
+        # Add price levels for HOLD signals
+        if final_signal == 'HOLD' and historical_data is not None:
+            try:
+                price_levels = self.price_analyzer.analyze_key_levels(
+                    historical_data,
+                    result['current_price'],
+                    result['technical_indicators']
+                )
+                result['price_levels'] = price_levels
+            except:
+                pass
+        
+        return result
     
     def _convert_ml_to_payload(self, ml_pred: Dict) -> SignalPayload:
         """Convert ML prediction to SignalPayload format"""
