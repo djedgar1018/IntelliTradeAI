@@ -271,22 +271,83 @@ class OptionsDataFetcher:
                         'premium': float(best_put['lastPrice']),
                         'delta': float(best_put.get('delta', 0)),
                         'breakeven': float(best_put.get('breakeven', 0)),
-                        'reason': 'In-the-money protective put'
+                        'reason': 'In-the-money protective put for portfolio hedging',
+                        'confidence': 75
                     })
+                try:
+                    if len(puts) > 0:
+                        sorted_indices = (puts['strike'] - current_price).abs().argsort()
+                        num_to_select = min(2, len(sorted_indices))
+                        if num_to_select > 0:
+                            atm_puts = puts.iloc[sorted_indices[:num_to_select]]
+                            if not atm_puts.empty:
+                                for idx, put in atm_puts.iterrows():
+                                    recommendations['put_recommendations'].append({
+                                        'strike': float(put['strike']),
+                                        'premium': float(put['lastPrice']),
+                                        'delta': float(put.get('delta', 0)),
+                                        'breakeven': float(put.get('breakeven', 0)),
+                                        'reason': 'At-the-money put for balanced downside protection',
+                                        'confidence': 70
+                                    })
+                except Exception as e:
+                    print(f"Warning: Could not process conservative put recommendations: {e}")
             
             elif strategy == 'aggressive':
                 otm_puts = puts[puts['inTheMoney'] == False]
-                if not otm_puts.empty:
-                    high_volume = otm_puts.nlargest(3, 'volume')
-                    for idx, put in high_volume.iterrows():
-                        recommendations['put_recommendations'].append({
-                            'strike': float(put['strike']),
-                            'premium': float(put['lastPrice']),
-                            'delta': float(put.get('delta', 0)),
-                            'volume': int(put['volume']),
-                            'breakeven': float(put.get('breakeven', 0)),
-                            'reason': 'Out-of-money put for speculative downside'
-                        })
+                if not otm_puts.empty and len(otm_puts) > 0:
+                    num_to_select = min(3, len(otm_puts))
+                    if num_to_select > 0:
+                        high_volume = otm_puts.nlargest(num_to_select, 'volume')
+                        if not high_volume.empty:
+                            for idx, put in high_volume.iterrows():
+                                recommendations['put_recommendations'].append({
+                                    'strike': float(put['strike']),
+                                    'premium': float(put['lastPrice']),
+                                    'delta': float(put.get('delta', 0)),
+                                    'volume': int(put.get('volume', 0)),
+                                    'breakeven': float(put.get('breakeven', 0)),
+                                    'reason': 'High-volume OTM put for speculative bearish play',
+                                    'confidence': 65
+                                })
+                try:
+                    if len(puts) > 0:
+                        sorted_indices = (puts['strike'] - current_price).abs().argsort()
+                        num_to_select = min(2, len(sorted_indices))
+                        if num_to_select > 0:
+                            atm_puts = puts.iloc[sorted_indices[:num_to_select]]
+                            if not atm_puts.empty:
+                                for idx, put in atm_puts.iterrows():
+                                    recommendations['put_recommendations'].append({
+                                        'strike': float(put['strike']),
+                                        'premium': float(put['lastPrice']),
+                                        'delta': float(put.get('delta', 0)),
+                                        'breakeven': float(put.get('breakeven', 0)),
+                                        'reason': 'ATM put for directional bearish exposure',
+                                        'confidence': 72
+                                    })
+                except Exception as e:
+                    print(f"Warning: Could not process aggressive put recommendations: {e}")
+            
+            else:
+                try:
+                    if len(puts) > 0:
+                        sorted_indices = (puts['strike'] - current_price).abs().argsort()
+                        num_to_select = min(3, len(sorted_indices))
+                        if num_to_select > 0:
+                            atm_puts = puts.iloc[sorted_indices[:num_to_select]]
+                            if not atm_puts.empty:
+                                for idx, put in atm_puts.iterrows():
+                                    recommendations['put_recommendations'].append({
+                                        'strike': float(put['strike']),
+                                        'premium': float(put['lastPrice']),
+                                        'delta': float(put.get('delta', 0)),
+                                        'breakeven': float(put.get('breakeven', 0)),
+                                        'reason': 'At-the-money put for balanced risk-reward',
+                                        'confidence': 70
+                                    })
+                except Exception as e:
+                    print(f"Warning: Could not process moderate put recommendations: {e}")
         
         return recommendations
     

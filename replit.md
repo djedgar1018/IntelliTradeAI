@@ -5,12 +5,17 @@ This AI-powered trading agent provides real-time predictive signals across 100+ 
 
 ## Recent Changes (December 2024)
 - Added SEC/FINRA legal compliance module with risk disclosures and e-signature authorization
-- Created interactive trading dictionary with 40+ terms across 12 categories
+- Created hover-based tooltip definitions (3-second delay) replacing standalone dictionary tab
 - Implemented user onboarding survey with 5 risk tolerance levels
 - Expanded crypto coverage to top 100 coins with 12 sector categorizations
 - Added all 11 GICS stock sectors with industries and 30+ ETF indices
 - Created personalized trading plan system from Conservative to Speculative
 - Added database tables for user profiles and e-signature records
+- Added sector & ETF rankings table with AI scores in trading plan
+- Added popup charts with optimal levels (support/resistance/entry/exit) for assets
+- Implemented price alerts functionality for recommended assets
+- Enhanced options trading plan with tier-specific call/put suggestions
+- Fixed options analysis to suggest both calls and puts for all strategies
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

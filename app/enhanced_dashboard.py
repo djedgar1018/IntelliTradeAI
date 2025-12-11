@@ -28,6 +28,8 @@ try:
     from app.trading_dictionary import TradingDictionary
     from app.user_onboarding import UserOnboarding, TradingPlan, RiskLevel
     from config.assets_config import CryptoAssets, StockAssets, AssetRecommendationEngine
+    from app.tooltip_definitions import TooltipTerms, inject_global_tooltips
+    from app.trading_plan_features import SectorRankings, OptimalLevelCharts, PriceAlerts, OptionsRecommendations
 except ImportError as import_err:
     print(f"Warning: Could not import new modules: {import_err}")
 
@@ -317,13 +319,13 @@ def render_main_dashboard():
         st.markdown(f"### 👋 Hello, {st.session_state.user['username']}")
         st.markdown("---")
         
-        # Navigation menu
+        # Navigation menu (Trading Dictionary removed - tooltips integrated globally)
         page = st.selectbox(
             "🗺️ Navigate",
             ["🏠 Dashboard Overview", "📋 My Trading Plan", "💼 Stock Portfolio", "₿ Crypto Portfolio", 
              "🔍 AI Analysis", "📊 Pattern Recognition", "💳 Wallet Management",
              "📈 Options Analysis", "📝 Trade Log & P&L", "😊 Market Sentiment",
-             "📧 Email Subscriptions", "📖 Trading Dictionary", "⚖️ Legal & Compliance", 
+             "📧 Email Subscriptions", "⚖️ Legal & Compliance", 
              "⚙️ Settings", "🔒 Security"]
         )
         
@@ -365,8 +367,6 @@ def render_main_dashboard():
         render_market_sentiment_page()
     elif page == "📧 Email Subscriptions":
         render_email_subscriptions_page()
-    elif page == "📖 Trading Dictionary":
-        render_trading_dictionary_page()
     elif page == "⚖️ Legal & Compliance":
         render_legal_compliance_page()
     elif page == "⚙️ Settings":
@@ -1856,6 +1856,11 @@ def render_trading_plan_page():
     st.title("📋 My Personalized Trading Plan")
     
     try:
+        TooltipTerms.inject_tooltip_css()
+    except:
+        pass
+    
+    try:
         if 'user_trading_plan' not in st.session_state:
             st.session_state.user_trading_plan = None
         
@@ -1886,35 +1891,90 @@ def render_trading_plan_page():
                     st.rerun()
             
             with col2:
-                if st.button("View My Recommended Assets", type="primary", use_container_width=True):
-                    risk_level = plan.get('risk_level', 'moderate')
-                    
-                    st.markdown("---")
-                    st.subheader("Recommended Crypto Assets")
-                    crypto_recs = AssetRecommendationEngine.get_crypto_recommendations(risk_level, 15)
-                    
-                    crypto_df_data = []
-                    for asset in crypto_recs:
-                        crypto_df_data.append({
-                            "Symbol": asset["symbol"],
-                            "Name": asset["name"],
-                            "Sector": asset["sector"],
-                            "Rank": asset["rank"]
-                        })
-                    
-                    if crypto_df_data:
-                        st.dataframe(pd.DataFrame(crypto_df_data), use_container_width=True)
-                    
-                    st.subheader("Recommended Stock Sectors")
-                    stock_recs = AssetRecommendationEngine.get_stock_recommendations(risk_level, 5)
-                    
-                    for sector, stocks in stock_recs.items():
-                        with st.expander(f"{sector}"):
-                            st.write(", ".join(stocks))
-                    
-                    st.subheader("Recommended ETFs")
-                    etf_recs = AssetRecommendationEngine.get_etf_recommendations(risk_level)
-                    st.write(", ".join(etf_recs))
+                view_assets = st.button("View My Recommended Assets", type="primary", use_container_width=True)
+            
+            risk_level = plan.get('risk_level', 'moderate')
+            
+            st.markdown("---")
+            
+            tab1, tab2, tab3, tab4, tab5 = st.tabs([
+                "Sector & ETF Rankings", 
+                "Recommended Assets", 
+                "Asset Charts",
+                "Price Alerts",
+                "Options Suggestions"
+            ])
+            
+            with tab1:
+                col1, col2 = st.columns(2)
+                with col1:
+                    SectorRankings.render_sector_rankings_table()
+                with col2:
+                    SectorRankings.render_etf_rankings_table()
+            
+            with tab2:
+                st.subheader("Recommended Crypto Assets")
+                crypto_recs = AssetRecommendationEngine.get_crypto_recommendations(risk_level, 15)
+                
+                crypto_df_data = []
+                for asset in crypto_recs:
+                    crypto_df_data.append({
+                        "Symbol": asset["symbol"],
+                        "Name": asset["name"],
+                        "Sector": asset["sector"],
+                        "Rank": asset["rank"]
+                    })
+                
+                if crypto_df_data:
+                    st.dataframe(pd.DataFrame(crypto_df_data), use_container_width=True, hide_index=True)
+                
+                st.markdown("---")
+                
+                st.subheader("Recommended Stock Sectors")
+                stock_recs = AssetRecommendationEngine.get_stock_recommendations(risk_level, 5)
+                
+                for sector, stocks in stock_recs.items():
+                    with st.expander(f"{sector}"):
+                        st.write(", ".join(stocks))
+                
+                st.markdown("---")
+                
+                st.subheader("Recommended ETFs")
+                etf_recs = AssetRecommendationEngine.get_etf_recommendations(risk_level)
+                st.write(", ".join(etf_recs))
+            
+            with tab3:
+                st.subheader("Asset Charts with Optimal Levels")
+                st.caption("Click on any asset to view its chart with support, resistance, and optimal entry/exit levels")
+                
+                all_assets = []
+                for asset in crypto_recs[:10]:
+                    all_assets.append(asset["symbol"])
+                for etf in etf_recs[:5]:
+                    all_assets.append(etf)
+                for sector, stocks in list(stock_recs.items())[:3]:
+                    all_assets.extend(stocks[:2])
+                
+                selected_assets = st.multiselect("Select assets to view charts:", all_assets, default=all_assets[:3])
+                
+                for symbol in selected_assets:
+                    OptimalLevelCharts.render_asset_chart_popup(symbol)
+            
+            with tab4:
+                all_recommended = []
+                for asset in crypto_recs[:15]:
+                    all_recommended.append(asset["symbol"])
+                all_recommended.extend(etf_recs)
+                for sector, stocks in stock_recs.items():
+                    all_recommended.extend(stocks[:3])
+                
+                PriceAlerts.render_price_alerts_section(all_recommended)
+            
+            with tab5:
+                if plan.get("options_allowed", False):
+                    OptionsRecommendations.render_options_suggestions(risk_level)
+                else:
+                    st.warning("Options trading is not recommended for your risk profile. Consider upgrading to a higher risk tier if you want options recommendations.")
     
     except Exception as e:
         st.error(f"Error loading trading plan: {str(e)}")
