@@ -152,6 +152,18 @@ except ImportError as e:
             return self.fetch_mixed_data(stock_symbols=symbols, period=period, interval=interval)
     
     ing = DataIngestion()
+    
+    def get_news_for_asset(symbol: str, limit: int = 5):
+        """Mock news provider for demo mode"""
+        return {
+            "symbol": symbol,
+            "articles": [
+                {"title": f"Demo news for {symbol}", "sentiment": "positive", "source": "Demo"},
+                {"title": f"Market update on {symbol}", "sentiment": "neutral", "source": "Demo"}
+            ],
+            "overall_sentiment": "neutral",
+            "sentiment_score": 0.5
+        }
 
 # Page configuration
 st.set_page_config(
