@@ -436,3 +436,149 @@ class DatabaseManager:
                     WHERE wallet_address = %s
                 """, (balance, wallet_address))
                 conn.commit()
+    
+    # ==================== USER PROFILE OPERATIONS ====================
+    
+    def save_user_profile(self, user_id: str, profile_data: Dict[str, Any]) -> str:
+        """Save or update user profile with risk assessment and trading plan"""
+        import json
+        
+        if self._check_demo_mode():
+            return user_id
+        
+        with self.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO user_profiles (
+                        user_id, investment_amount, investment_tier, risk_level,
+                        risk_scores, trading_plan, preferences, auto_trade_settings,
+                        onboarding_completed
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (user_id)
+                    DO UPDATE SET
+                        investment_amount = EXCLUDED.investment_amount,
+                        investment_tier = EXCLUDED.investment_tier,
+                        risk_level = EXCLUDED.risk_level,
+                        risk_scores = EXCLUDED.risk_scores,
+                        trading_plan = EXCLUDED.trading_plan,
+                        preferences = EXCLUDED.preferences,
+                        auto_trade_settings = EXCLUDED.auto_trade_settings,
+                        onboarding_completed = EXCLUDED.onboarding_completed,
+                        updated_at = NOW()
+                    RETURNING user_id
+                """, (
+                    user_id,
+                    profile_data.get('investment_amount', 0),
+                    profile_data.get('investment_tier', 'Starter'),
+                    profile_data.get('risk_level', 'moderate'),
+                    json.dumps(profile_data.get('assessment_scores', [])),
+                    json.dumps(profile_data),
+                    json.dumps(profile_data.get('preferences', {})),
+                    json.dumps(profile_data.get('auto_trade_settings', {})),
+                    profile_data.get('onboarding_completed', True)
+                ))
+                conn.commit()
+                return user_id
+    
+    def get_user_profile(self, user_id: str) -> Optional[Dict]:
+        """Get user profile with trading plan"""
+        import json
+        
+        if self._check_demo_mode():
+            return None
+        
+        with self.get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT * FROM user_profiles WHERE user_id = %s
+                """, (user_id,))
+                result = cur.fetchone()
+                if result:
+                    profile = dict(result)
+                    if profile.get('trading_plan'):
+                        profile['trading_plan'] = json.loads(profile['trading_plan'])
+                    if profile.get('preferences'):
+                        profile['preferences'] = json.loads(profile['preferences'])
+                    if profile.get('auto_trade_settings'):
+                        profile['auto_trade_settings'] = json.loads(profile['auto_trade_settings'])
+                    if profile.get('risk_scores'):
+                        profile['risk_scores'] = json.loads(profile['risk_scores'])
+                    return profile
+                return None
+    
+    def save_esignature_record(self, signature_data: Dict[str, Any]) -> str:
+        """Save e-signature record for compliance audit trail"""
+        import json
+        
+        signature_id = str(uuid.uuid4())
+        
+        if self._check_demo_mode():
+            return signature_id
+        
+        with self.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO esignature_records (
+                        signature_id, user_id, user_email, agreement_type,
+                        agreement_hash, trading_config, ip_address, signed_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING signature_id
+                """, (
+                    signature_id,
+                    signature_data.get('user_name', 'unknown'),
+                    signature_data.get('user_email', 'unknown'),
+                    'automatic_trading_authorization',
+                    signature_data.get('agreement_hash', ''),
+                    json.dumps(signature_data.get('trading_config', {})),
+                    signature_data.get('ip_address', 'unknown'),
+                    signature_data.get('signed_at', datetime.now().isoformat())
+                ))
+                conn.commit()
+                return signature_id
+    
+    def get_esignature_records(self, user_id: str) -> List[Dict]:
+        """Get all e-signature records for a user"""
+        if self._check_demo_mode():
+            return []
+        
+        with self.get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT * FROM esignature_records 
+                    WHERE user_id = %s 
+                    ORDER BY signed_at DESC
+                """, (user_id,))
+                return [dict(row) for row in cur.fetchall()]
+    
+    def has_active_auto_trading_consent(self, user_id: str) -> bool:
+        """Check if user has active automatic trading consent"""
+        if self._check_demo_mode():
+            return False
+        
+        with self.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT COUNT(*) FROM esignature_records 
+                    WHERE user_id = %s 
+                    AND agreement_type = 'automatic_trading_authorization'
+                    AND revoked_at IS NULL
+                """, (user_id,))
+                count = cur.fetchone()[0]
+                return count > 0
+    
+    def revoke_auto_trading_consent(self, user_id: str) -> bool:
+        """Revoke automatic trading consent"""
+        if self._check_demo_mode():
+            return True
+        
+        with self.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE esignature_records 
+                    SET revoked_at = NOW()
+                    WHERE user_id = %s 
+                    AND agreement_type = 'automatic_trading_authorization'
+                    AND revoked_at IS NULL
+                """, (user_id,))
+                conn.commit()
+                return True

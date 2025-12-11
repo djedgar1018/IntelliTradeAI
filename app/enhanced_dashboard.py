@@ -22,6 +22,15 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Import new compliance, dictionary, and onboarding modules
+try:
+    from compliance.legal_compliance import LegalComplianceManager
+    from app.trading_dictionary import TradingDictionary
+    from app.user_onboarding import UserOnboarding, TradingPlan, RiskLevel
+    from config.assets_config import CryptoAssets, StockAssets, AssetRecommendationEngine
+except ImportError as import_err:
+    print(f"Warning: Could not import new modules: {import_err}")
+
 try:
     from auth.secure_auth import SecureAuthManager
     from blockchain.wallet_manager import SecureWalletManager, PortfolioTracker
@@ -77,6 +86,25 @@ except ImportError as e:
                     "risk_level": "Medium",
                     "action_explanation": "Demo analysis shows positive signals"
                 }
+            }
+    
+    class MLPredictor:
+        def __init__(self): pass
+        def predict(self, symbol, data):
+            return {"signal": "BUY", "confidence": 0.75, "prediction": "Bullish"}
+        def get_model_info(self):
+            return {"model": "Demo", "accuracy": 0.72}
+    
+    class SignalFusionEngine:
+        def __init__(self): pass
+        def get_unified_signal(self, symbol, data):
+            return {
+                "final_signal": "BUY",
+                "confidence": 75,
+                "ml_signal": "BUY",
+                "pattern_signal": "BUY", 
+                "news_signal": "NEUTRAL",
+                "reasoning": "Demo signal fusion"
             }
     
     # Create dummy data module
@@ -292,10 +320,11 @@ def render_main_dashboard():
         # Navigation menu
         page = st.selectbox(
             "🗺️ Navigate",
-            ["🏠 Dashboard Overview", "💼 Stock Portfolio", "₿ Crypto Portfolio", 
+            ["🏠 Dashboard Overview", "📋 My Trading Plan", "💼 Stock Portfolio", "₿ Crypto Portfolio", 
              "🔍 AI Analysis", "📊 Pattern Recognition", "💳 Wallet Management",
              "📈 Options Analysis", "📝 Trade Log & P&L", "😊 Market Sentiment",
-             "📧 Email Subscriptions", "⚙️ Settings", "🔒 Security"]
+             "📧 Email Subscriptions", "📖 Trading Dictionary", "⚖️ Legal & Compliance", 
+             "⚙️ Settings", "🔒 Security"]
         )
         
         st.markdown("---")
@@ -316,6 +345,8 @@ def render_main_dashboard():
     # Main content based on selected page
     if page == "🏠 Dashboard Overview":
         render_dashboard_overview()
+    elif page == "📋 My Trading Plan":
+        render_trading_plan_page()
     elif page == "💼 Stock Portfolio":
         render_stock_portfolio()
     elif page == "₿ Crypto Portfolio":
@@ -334,6 +365,10 @@ def render_main_dashboard():
         render_market_sentiment_page()
     elif page == "📧 Email Subscriptions":
         render_email_subscriptions_page()
+    elif page == "📖 Trading Dictionary":
+        render_trading_dictionary_page()
+    elif page == "⚖️ Legal & Compliance":
+        render_legal_compliance_page()
     elif page == "⚙️ Settings":
         render_settings_page()
     elif page == "🔒 Security":
@@ -1814,6 +1849,154 @@ def render_email_subscriptions_page():
     except Exception as e:
         st.error(f"Error loading email subscriptions: {str(e)}")
         st.info("Email subscription module is being set up. Please check back soon!")
+
+
+def render_trading_plan_page():
+    """Render the user trading plan page with onboarding and risk assessment"""
+    st.title("📋 My Personalized Trading Plan")
+    
+    try:
+        if 'user_trading_plan' not in st.session_state:
+            st.session_state.user_trading_plan = None
+        
+        if 'onboarding_completed' not in st.session_state:
+            st.session_state.onboarding_completed = False
+        
+        if not st.session_state.onboarding_completed or st.session_state.user_trading_plan is None:
+            st.info("Complete the survey below to get your personalized trading plan based on your risk tolerance and investment goals.")
+            
+            plan = UserOnboarding.display_onboarding_survey()
+            
+            if plan:
+                st.session_state.user_trading_plan = plan
+                st.session_state.onboarding_completed = True
+                st.rerun()
+        else:
+            plan = st.session_state.user_trading_plan
+            
+            UserOnboarding.display_trading_plan(plan)
+            
+            st.markdown("---")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Retake Assessment", use_container_width=True):
+                    st.session_state.onboarding_completed = False
+                    st.session_state.user_trading_plan = None
+                    st.rerun()
+            
+            with col2:
+                if st.button("View My Recommended Assets", type="primary", use_container_width=True):
+                    risk_level = plan.get('risk_level', 'moderate')
+                    
+                    st.markdown("---")
+                    st.subheader("Recommended Crypto Assets")
+                    crypto_recs = AssetRecommendationEngine.get_crypto_recommendations(risk_level, 15)
+                    
+                    crypto_df_data = []
+                    for asset in crypto_recs:
+                        crypto_df_data.append({
+                            "Symbol": asset["symbol"],
+                            "Name": asset["name"],
+                            "Sector": asset["sector"],
+                            "Rank": asset["rank"]
+                        })
+                    
+                    if crypto_df_data:
+                        st.dataframe(pd.DataFrame(crypto_df_data), use_container_width=True)
+                    
+                    st.subheader("Recommended Stock Sectors")
+                    stock_recs = AssetRecommendationEngine.get_stock_recommendations(risk_level, 5)
+                    
+                    for sector, stocks in stock_recs.items():
+                        with st.expander(f"{sector}"):
+                            st.write(", ".join(stocks))
+                    
+                    st.subheader("Recommended ETFs")
+                    etf_recs = AssetRecommendationEngine.get_etf_recommendations(risk_level)
+                    st.write(", ".join(etf_recs))
+    
+    except Exception as e:
+        st.error(f"Error loading trading plan: {str(e)}")
+        st.info("Please try refreshing the page.")
+
+
+def render_trading_dictionary_page():
+    """Render the interactive trading dictionary"""
+    try:
+        TradingDictionary.display_dictionary_page()
+    except Exception as e:
+        st.error(f"Error loading dictionary: {str(e)}")
+        st.info("Dictionary module is being initialized. Please check back soon!")
+
+
+def render_legal_compliance_page():
+    """Render the legal compliance and e-signature page"""
+    st.title("Legal & Compliance")
+    
+    try:
+        tab1, tab2, tab3 = st.tabs(["Risk Disclosures", "Automatic Trading Authorization", "Consent History"])
+        
+        with tab1:
+            st.subheader("Important Risk Disclosures")
+            st.markdown("Please review all risk disclosures before trading.")
+            LegalComplianceManager.display_all_disclosures()
+        
+        with tab2:
+            st.subheader("Automatic Trading Authorization")
+            
+            if 'auto_trading_authorized' not in st.session_state:
+                st.session_state.auto_trading_authorized = False
+            
+            if st.session_state.auto_trading_authorized:
+                st.success("You have authorized automatic trading. Your AI trading bot can execute trades on your behalf.")
+                
+                if st.button("Revoke Authorization", type="secondary"):
+                    st.session_state.auto_trading_authorized = False
+                    st.warning("Automatic trading authorization has been revoked. The AI will no longer execute trades without your approval.")
+                    st.rerun()
+            else:
+                st.warning("Automatic trading is not authorized. Complete the e-signature below to enable.")
+                
+                user_name = st.session_state.user.get('username', 'User')
+                user_email = st.session_state.user.get('email', 'user@example.com')
+                
+                trading_config = {
+                    'max_position_size_percent': 10,
+                    'stop_loss_percent': 5,
+                    'take_profit_percent': 15,
+                    'min_confidence': 70,
+                    'max_daily_trades': 10,
+                    'max_loss_per_day': 500
+                }
+                
+                signature_result = LegalComplianceManager.display_esignature_flow(
+                    user_name, user_email, trading_config
+                )
+                
+                if signature_result:
+                    st.session_state.auto_trading_authorized = True
+                    st.session_state.esignature_record = signature_result
+                    st.rerun()
+        
+        with tab3:
+            st.subheader("Consent History")
+            
+            if 'esignature_record' in st.session_state:
+                record = st.session_state.esignature_record
+                st.markdown(f"""
+                **Last Authorization:**
+                - Signed by: {record.get('user_name', 'N/A')}
+                - Email: {record.get('user_email', 'N/A')}
+                - Date: {record.get('signed_at', 'N/A')}
+                - Agreement Hash: `{record.get('agreement_hash', 'N/A')}`
+                """)
+            else:
+                st.info("No consent records found. Complete the authorization process to see history here.")
+    
+    except Exception as e:
+        st.error(f"Error loading compliance page: {str(e)}")
+        st.info("Compliance module is being initialized. Please check back soon!")
 
 
 # Main application logic

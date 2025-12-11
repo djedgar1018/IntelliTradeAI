@@ -1,7 +1,16 @@
-# AI-Powered Trading Agent
+# AI-Powered Trading Agent (IntelliTradeAI)
 
 ## Overview
-This AI-powered trading agent provides real-time predictive signals across 36 tradable assets (20 cryptocurrencies + 18 stocks). It leverages multiple machine learning models (LSTM, Random Forest, XGBoost), explainable AI features, and comprehensive backtesting capabilities to generate trading signals. The system integrates real-time news intelligence and sophisticated signal fusion to provide actionable trading recommendations. It also includes capabilities for options trading, automated execution, blockchain integration, and sentiment analysis.
+This AI-powered trading agent provides real-time predictive signals across 100+ cryptocurrencies and comprehensive stock market coverage. It leverages multiple machine learning models (LSTM, Random Forest, XGBoost), explainable AI features, and comprehensive backtesting capabilities to generate trading signals. The system integrates real-time news intelligence and sophisticated signal fusion to provide actionable trading recommendations. It includes capabilities for options trading, automated execution with e-signature consent, blockchain integration, sentiment analysis, personalized trading plans based on risk tolerance, and SEC-compliant legal disclosures.
+
+## Recent Changes (December 2024)
+- Added SEC/FINRA legal compliance module with risk disclosures and e-signature authorization
+- Created interactive trading dictionary with 40+ terms across 12 categories
+- Implemented user onboarding survey with 5 risk tolerance levels
+- Expanded crypto coverage to top 100 coins with 12 sector categorizations
+- Added all 11 GICS stock sectors with industries and 30+ ETF indices
+- Created personalized trading plan system from Conservative to Speculative
+- Added database tables for user profiles and e-signature records
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
