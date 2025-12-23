@@ -80,7 +80,7 @@ The impact of news and social media sentiment on financial markets has been exte
 IntelliTradeAI employs a layered architecture consisting of five primary components as illustrated in Fig.~\ref{fig:methodology}. The Data Ingestion Layer fetches market data from external APIs including Yahoo Finance for historical OHLCV data and CoinMarketCap for real-time cryptocurrency prices. The Feature Engineering Pipeline transforms raw price data into 70+ technical indicators. The Machine Learning Layer trains and deploys ensemble prediction models. The Tri-Signal Fusion Engine combines signal sources through weighted voting with conflict resolution. The Presentation Layer provides an interactive Streamlit-based dashboard.
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{figure1_methodology_flow.png}}
+\centerline{\includegraphics[width=\columnwidth]{fig1.png}}
 \caption{IntelliTradeAI system architecture and methodology flow diagram showing the data pipeline from ingestion through tri-signal fusion to final signal output.}
 \label{fig:methodology}
 \end{figure}
@@ -168,7 +168,7 @@ The custom backtesting engine evaluates strategy performance through walk-forwar
 Fig.~\ref{fig:loss} presents training and validation loss curves for both models across 100 epochs. The Random Forest model achieved convergence at epoch 45 with training loss of 0.312 and validation loss of 0.358. XGBoost demonstrated faster convergence at epoch 38 with validation loss of 0.341.
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{figure2_training_loss.png}}
+\centerline{\includegraphics[width=\columnwidth]{fig2.png}}
 \caption{Training and validation loss curves for Random Forest (left) and XGBoost (right) classifiers showing convergence behavior.}
 \label{fig:loss}
 \end{figure}
@@ -228,7 +228,7 @@ The tri-signal approach improved accuracy by 8.3\% over ML-only predictions whil
 Fig.~\ref{fig:backtest} shows walk-forward backtesting results over 2 years (2022-2024).
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{figure3_backtest_returns.png}}
+\centerline{\includegraphics[width=\columnwidth]{fig3.png}}
 \caption{Backtest cumulative returns comparison between Tri-Signal Fusion strategy, ML-only strategy, and S\&P 500 benchmark.}
 \label{fig:backtest}
 \end{figure}
