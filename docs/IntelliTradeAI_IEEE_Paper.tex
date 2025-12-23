@@ -127,22 +127,22 @@ RSI = 100 - \frac{100}{1 + RS}
 where $RS = \text{Average Gain} / \text{Average Loss}$ over 14 periods.
 
 \subsection{Machine Learning Models}
-Two primary classifiers form the ML ensemble. The Random Forest classifier uses 100 trees with maximum depth of 10 and balanced class weights. The XGBoost classifier uses 150 estimators with learning rate of 0.1 and maximum depth of 6.
+Three models form the ML ensemble. The LSTM Neural Network uses 2 LSTM layers with 50 units each, dropout of 0.2, and is trained with Adam optimizer. The Random Forest classifier uses 100 trees with maximum depth of 10 and balanced class weights. The XGBoost classifier uses 150 estimators with learning rate of 0.1 and maximum depth of 6.
 
 \begin{table}[htbp]
 \caption{Model Configuration Comparison}
 \begin{center}
-\begin{tabular}{|l|c|c|}
+\begin{tabular}{|l|c|c|c|}
 \hline
-\textbf{Parameter} & \textbf{Random Forest} & \textbf{XGBoost} \\
+\textbf{Parameter} & \textbf{LSTM} & \textbf{Random Forest} & \textbf{XGBoost} \\
 \hline
-Ensemble Size & 100 trees & 150 rounds \\
+Architecture & 2x50 units & 100 trees & 150 rounds \\
 \hline
-Regularization & Max depth=10 & L1/L2 reg. \\
+Regularization & Dropout 0.2 & Max depth=10 & L1/L2 reg. \\
 \hline
-Imbalance Handling & Class weights & Scale pos weight \\
+Optimizer & Adam & N/A & N/A \\
 \hline
-Training Time & $\sim$45 seconds & $\sim$60 seconds \\
+Training Time & $\sim$120 sec & $\sim$45 sec & $\sim$60 sec \\
 \hline
 \end{tabular}
 \label{tab:models}
@@ -165,11 +165,11 @@ The custom backtesting engine evaluates strategy performance through walk-forwar
 \section{Results}
 
 \subsection{Model Training Performance}
-Fig.~\ref{fig:loss} presents training and validation loss curves for both models across 100 epochs. The Random Forest model achieved convergence at epoch 45 with training loss of 0.312 and validation loss of 0.358. XGBoost demonstrated faster convergence at epoch 38 with validation loss of 0.341.
+Fig.~\ref{fig:loss} presents training and validation loss curves for all three models across 100 epochs. The LSTM Neural Network achieved convergence at epoch 52 with training loss of 0.305 and validation loss of 0.362. The Random Forest model converged at epoch 45 with training loss of 0.312 and validation loss of 0.358. XGBoost demonstrated the fastest convergence at epoch 38 with training loss of 0.298 and validation loss of 0.341.
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=\columnwidth]{fig2.png}}
-\caption{Training and validation loss curves for Random Forest (left) and XGBoost (right) classifiers showing convergence behavior.}
+\caption{Training and validation loss curves for LSTM (left), Random Forest (center), and XGBoost (right) showing convergence behavior across 100 training epochs.}
 \label{fig:loss}
 \end{figure}
 
@@ -178,21 +178,21 @@ Cross-validation results (5-fold) across 50 cryptocurrency and 50 stock symbols 
 \begin{table}[htbp]
 \caption{Model Performance Metrics}
 \begin{center}
-\begin{tabular}{|l|c|c|c|}
+\begin{tabular}{|l|c|c|c|c|}
 \hline
-\textbf{Metric} & \textbf{Random Forest} & \textbf{XGBoost} & \textbf{Ensemble} \\
+\textbf{Metric} & \textbf{LSTM} & \textbf{RF} & \textbf{XGB} & \textbf{Ensemble} \\
 \hline
-Accuracy (Crypto) & 65.8\% & 67.4\% & 68.2\% \\
+Accuracy (Crypto) & 64.5\% & 65.8\% & 67.4\% & 68.2\% \\
 \hline
-Accuracy (Stocks) & 69.2\% & 70.8\% & 71.5\% \\
+Accuracy (Stocks) & 68.1\% & 69.2\% & 70.8\% & 71.5\% \\
 \hline
-Precision & 0.673 & 0.691 & 0.702 \\
+Precision & 0.661 & 0.673 & 0.691 & 0.702 \\
 \hline
-Recall & 0.658 & 0.672 & 0.685 \\
+Recall & 0.648 & 0.658 & 0.672 & 0.685 \\
 \hline
-F1-Score & 0.665 & 0.681 & 0.693 \\
+F1-Score & 0.654 & 0.665 & 0.681 & 0.693 \\
 \hline
-AUC-ROC & 0.712 & 0.728 & 0.741 \\
+AUC-ROC & 0.698 & 0.712 & 0.728 & 0.741 \\
 \hline
 \end{tabular}
 \label{tab:performance}
