@@ -58,3 +58,6 @@ pillow>=10.1.0
 
 # Scientific Computing
 scipy>=1.11.0
+docx
+imbalanced-learn
+lightgbm
