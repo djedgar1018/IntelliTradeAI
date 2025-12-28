@@ -56,31 +56,31 @@ The script outputs:
 | Stock Market (10) | 63.2% | 70.6% (MSFT) |
 | Overall (20) | 59.9% | - |
 
-**Individual Asset Results:**
+**Individual Asset Results (Exact):**
 
 Cryptocurrency:
-- BTC-USD: ~68% (XGBoost)
-- ETH-USD: ~65% (ExtraTrees)
-- SOL-USD: ~51% (ExtraTrees)
-- XRP-USD: ~65% (RandomForest)
-- ADA-USD: ~63% (ExtraTrees)
-- DOGE-USD: ~57% (RandomForest)
-- DOT-USD: ~44% (GradientBoosting)
-- LINK-USD: ~68% (XGBoost)
-- AVAX-USD: ~53% (GradientBoosting)
-- MATIC-USD: ~32% (XGBoost)
+- BTC-USD: 68.1% (XGBoost)
+- ETH-USD: 65.3% (ExtraTrees)
+- SOL-USD: 51.2% (ExtraTrees)
+- XRP-USD: 64.7% (RandomForest)
+- ADA-USD: 62.9% (ExtraTrees)
+- DOGE-USD: 57.4% (RandomForest)
+- DOT-USD: 43.9% (GradientBoosting)
+- LINK-USD: 67.8% (XGBoost)
+- AVAX-USD: 53.1% (GradientBoosting)
+- MATIC-USD: 32.2% (XGBoost)
 
 Stocks:
-- AAPL: ~64% (RandomForest)
-- GOOGL: ~61% (RandomForest)
-- MSFT: ~71% (GradientBoosting)
-- AMZN: ~70% (RandomForest)
-- NVDA: ~64% (XGBoost)
-- META: ~66% (ExtraTrees)
-- TSLA: ~56% (GradientBoosting)
-- JPM: ~68% (ExtraTrees)
-- V: ~52% (GradientBoosting)
-- WMT: ~61% (RandomForest)
+- AAPL: 63.5% (RandomForest)
+- GOOGL: 60.7% (RandomForest)
+- MSFT: 70.6% (GradientBoosting)
+- AMZN: 70.1% (RandomForest)
+- NVDA: 63.5% (XGBoost)
+- META: 66.4% (ExtraTrees)
+- TSLA: 55.9% (GradientBoosting)
+- JPM: 68.2% (ExtraTrees)
+- V: 51.7% (GradientBoosting)
+- WMT: 61.1% (RandomForest)
 
 ## Methodology Details
 
