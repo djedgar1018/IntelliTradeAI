@@ -58,8 +58,3 @@ pillow>=10.1.0
 
 # Scientific Computing
 scipy>=1.11.0
-docx
-pymupdf
-imbalanced-learn
-lightgbm
-optuna

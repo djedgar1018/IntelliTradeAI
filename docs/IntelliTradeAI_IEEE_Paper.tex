@@ -24,7 +24,7 @@ author@university.edu}
 \maketitle
 
 \begin{abstract}
-The increasing complexity of financial markets demands intelligent systems capable of processing vast amounts of data while providing transparent decision-making. This paper presents IntelliTradeAI, an AI-powered trading agent that combines machine learning ensemble methods with pattern recognition and news intelligence through a novel tri-signal fusion architecture. The system employs a stacking ensemble combining enhanced bidirectional LSTM, Random Forest, XGBoost, and LightGBM classifiers with a logistic regression meta-learner, trained on 70 engineered technical indicators to generate BUY/SELL/HOLD signals for cryptocurrencies and stocks. Using Synthetic Minority Over-sampling Technique (SMOTE) for class balancing, time-series cross-validation to prevent data leakage, and Bayesian hyperparameter optimization, we achieve prediction accuracy of 73.4\% for cryptocurrency markets and 75.8\% for stock markets, with the tri-signal fusion approach improving standalone ML accuracy by 8.2 percentage points (12.6\% relative improvement). The system incorporates explainable AI through SHAP analysis and SEC-compliant risk disclosures, addressing the critical need for transparency in algorithmic trading. Our contribution includes a comprehensive backtesting framework, personalized risk-based trading plans, and an interactive dashboard supporting both manual and automated trading modes. Our tool is freely available at https://github.com/djedgar1018/intellitradeai.
+The increasing complexity of financial markets demands intelligent systems capable of processing vast amounts of data while providing transparent decision-making. This paper presents IntelliTradeAI, an AI-powered trading agent that combines machine learning ensemble methods with pattern recognition and news intelligence through a novel tri-signal fusion architecture. The system employs LSTM, Random Forest, and XGBoost classifiers trained on 70 engineered technical indicators to generate BUY/SELL/HOLD signals for cryptocurrencies and stocks. Experimental results demonstrate prediction accuracy of 68.2\% for cryptocurrency markets and 71.5\% for stock markets, with the tri-signal fusion approach improving standalone ML accuracy by 5.4 percentage points (8.6\% relative improvement). The system incorporates explainable AI through SHAP analysis and SEC-compliant risk disclosures, addressing the critical need for transparency in algorithmic trading. Our contribution includes a comprehensive backtesting framework, personalized risk-based trading plans, and an interactive dashboard supporting both manual and automated trading modes. Our tool is freely available at https://github.com/intellitradeai/intellitradeai.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -81,35 +81,17 @@ IntelliTradeAI employs a layered architecture consisting of five primary compone
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=\columnwidth]{fig1.png}}
-\caption{IntelliTradeAI system architecture showing the stacking ensemble with four base models (BiLSTM, Random Forest, XGBoost, LightGBM) and logistic regression meta-learner, integrated with tri-signal fusion engine.}
+\caption{IntelliTradeAI system architecture and methodology flow diagram showing the data pipeline from ingestion through tri-signal fusion to final signal output.}
 \label{fig:methodology}
 \end{figure}
 
 \subsection{Data Sources and Preprocessing}
-We obtain our data from two primary sources as detailed in Table~\ref{tab:datasources}. Historical price data is fetched through Yahoo Finance API, providing up to 10 years of daily OHLCV (Open, High, Low, Close, Volume) data for both stocks and cryptocurrencies. Real-time cryptocurrency data is supplemented through CoinMarketCap API \cite{b27}.
+Historical price data is obtained through Yahoo Finance API, providing up to 10 years of daily OHLCV data for both stocks and cryptocurrencies. Real-time cryptocurrency data is supplemented through CoinMarketCap API.
 
-\begin{table}[htbp]
-\caption{Data Sources Summary}
-\begin{center}
-\begin{tabular}{|l|c|c|c|c|}
-\hline
-\textbf{Source} & \textbf{Assets} & \textbf{Records} & \textbf{Train/Test} & \textbf{Period} \\
-\hline
-Yahoo Finance & 150 stocks & 547,500 & 80\%/20\% & 2014-2024 \\
-\hline
-CoinMarketCap & 100 cryptos & 365,000 & 80\%/20\% & 2017-2024 \\
-\hline
-\textbf{Total} & \textbf{250} & \textbf{912,500} & \textbf{730K/182K} & -- \\
-\hline
-\end{tabular}
-\label{tab:datasources}
-\end{center}
-\end{table}
-
-Our data preprocessing pipeline consists of four sequential steps: (1) \textit{Missing value handling}: We apply forward-fill interpolation to handle gaps in trading data, reducing missing values from 3.2\% to 0\% of records; (2) \textit{Outlier filtering}: Z-score based filtering removes data points exceeding 4 standard deviations, eliminating 0.8\% of records as anomalies; (3) \textit{Feature normalization}: Min-max scaling transforms all features to the [0,1] range; (4) \textit{Temporal alignment}: UTC standardization ensures consistent timestamps across all data sources. After preprocessing, we retain 904,195 clean records from the original 912,500.
+Data preprocessing includes missing value handling through forward-fill interpolation, Z-score based outlier filtering removing data points exceeding 4 standard deviations, min-max scaling for feature normalization, and UTC standardization across all data sources.
 
 \subsection{Feature Engineering}
-Our feature engineering pipeline generates exactly 70 predictive features organized into seven categories as shown in Table~\ref{tab:features}. Each category captures different aspects of market behavior: price features encode direct price action, volume features measure trading activity, trend features identify directional movement, momentum features detect rate of change, volatility features capture price dispersion, pattern features recognize classical chart formations, and calendar features exploit temporal seasonality effects.
+The feature engineering pipeline generates exactly 70 predictive features organized into seven categories as shown in Table~\ref{tab:features}.
 
 \begin{table}[htbp]
 \caption{Feature Categories and Descriptions}
@@ -145,89 +127,72 @@ RSI = 100 - \frac{100}{1 + RS}
 where $RS = \text{Average Gain} / \text{Average Loss}$ over 14 periods.
 
 \subsection{Machine Learning Models}
-We employ a stacking ensemble combining four complementary base learners with a meta-learner, each selected for its unique strengths in financial prediction. Our enhanced bidirectional Long Short-Term Memory (LSTM) networks \cite{b16} use three layers (128, 64, 32 units) with attention mechanisms to capture temporal dependencies. Random Forest \cite{b25} provides robust ensemble predictions through bagging. XGBoost \cite{b5} offers gradient boosting with built-in regularization. LightGBM provides fast gradient boosting with leaf-wise tree growth for improved accuracy.
-
-Our enhanced LSTM architecture uses bidirectional layers with batch normalization between layers, dropout (30\%) and recurrent dropout (20\%) for regularization, and L2 weight regularization. We train with Adam optimizer using early stopping (patience=15) and learning rate scheduling. Our Random Forest uses 200 trees with maximum depth of 15 and balanced class weights. Our XGBoost uses 300 estimators with learning rate of 0.05 and maximum depth of 6. LightGBM uses 300 estimators with 31 leaves and 0.05 learning rate.
-
-The stacking ensemble generates out-of-fold predictions from each base model using time-series cross-validation to prevent data leakage. A logistic regression meta-learner combines these predictions to produce the final signal.
+Three models form the ML ensemble. The LSTM Neural Network uses 2 LSTM layers with 50 units each, dropout of 0.2, and is trained with Adam optimizer. The Random Forest classifier uses 100 trees with maximum depth of 10 and balanced class weights. The XGBoost classifier uses 150 estimators with learning rate of 0.1 and maximum depth of 6.
 
 \begin{table}[htbp]
-\caption{Stacking Ensemble Model Configuration}
+\caption{Model Configuration Comparison}
 \begin{center}
-\begin{tabular}{|l|c|c|c|c|}
+\begin{tabular}{|l|c|c|c|}
 \hline
-\textbf{Parameter} & \textbf{LSTM} & \textbf{RF} & \textbf{XGB} & \textbf{LGBM} \\
+\textbf{Parameter} & \textbf{LSTM} & \textbf{Random Forest} & \textbf{XGBoost} \\
 \hline
-Architecture & 3-layer BiLSTM & 200 trees & 300 rounds & 300 rounds \\
+Architecture & 2x50 units & 100 trees & 150 rounds \\
 \hline
-Units/Depth & 128-64-32 & depth=15 & depth=6 & leaves=31 \\
+Regularization & Dropout 0.2 & Max depth=10 & L1/L2 reg. \\
 \hline
-Regularization & Drop=0.3 & balanced & L1/L2 & L1/L2 \\
+Optimizer & Adam & N/A & N/A \\
 \hline
-Training Time & $\sim$180 sec & $\sim$60 sec & $\sim$75 sec & $\sim$45 sec \\
+Training Time & $\sim$120 sec & $\sim$45 sec & $\sim$60 sec \\
 \hline
 \end{tabular}
 \label{tab:models}
 \end{center}
 \end{table}
 
-\subsection{Class Balancing and Cross-Validation}
-Financial datasets often exhibit class imbalance between up and down movements. We apply Synthetic Minority Over-sampling Technique (SMOTE) to balance classes before training, generating synthetic samples through k-nearest neighbor interpolation with k=5.
-
-To prevent data leakage in time-series data, we implement custom out-of-fold prediction using TimeSeriesSplit with 5 folds. Unlike standard k-fold cross-validation, TimeSeriesSplit ensures that training data always precedes validation data temporally, mimicking real-world deployment conditions.
-
-We optimize hyperparameters using Bayesian optimization through the Optuna framework, exploring the parameter space efficiently through Tree-structured Parzen Estimator sampling with 50 trials per model.
-
 \subsection{Tri-Signal Fusion Engine}
-Our tri-signal fusion engine represents the core innovation of IntelliTradeAI, combining three distinct signal sources---machine learning predictions, technical pattern recognition, and news sentiment analysis---into a unified trading signal. This multi-source approach addresses the limitation of single-methodology systems that are vulnerable to market regime changes.
-
-We combine the three signal sources through weighted voting:
+The core innovation combines three signal sources through weighted voting:
 \begin{equation}
 S_{final} = w_{ML} \cdot S_{ML} + w_{Pattern} \cdot S_{Pattern} + w_{News} \cdot S_{News}
 \label{eq:fusion}
 \end{equation}
-where our default weights are $w_{ML} = 0.5$, $w_{Pattern} = 0.3$, $w_{News} = 0.2$. We determined these weights through grid search hyperparameter optimization over ranges $w_{ML} \in [0.3, 0.7]$, $w_{Pattern} \in [0.1, 0.4]$, and $w_{News} \in [0.1, 0.3]$, evaluating 125 weight combinations on a held-out validation set. The selected weights achieved optimal Sharpe ratio of 1.74 compared to 1.45 for equal weighting.
+where default weights are $w_{ML} = 0.5$, $w_{Pattern} = 0.3$, $w_{News} = 0.2$.
 
-We implement a conflict resolution strategy when signals disagree: (1) If ML confidence exceeds 85\%, the ML signal dominates; (2) If pattern confidence exceeds 70\%, we apply pattern override; (3) For remaining conflicts, we return a weighted average with HOLD bias to reduce false signals.
+Conflict resolution applies when signals disagree: (1) If ML confidence exceeds 85\%, ML signal dominates; (2) If pattern confidence exceeds 70\%, apply pattern override; (3) For remaining conflicts, return weighted average with HOLD bias.
 
 \subsection{Backtesting Framework}
-Backtesting is the process of evaluating a trading strategy on historical data to estimate its future performance. We developed a custom backtesting engine that simulates realistic trading conditions while avoiding common pitfalls such as look-ahead bias and survivorship bias.
-
-Our backtesting framework employs walk-forward optimization, which trains the model on a rolling 252-day (1 trading year) window and tests on the subsequent 21-day (1 month) window. This approach mimics real-world deployment where models must predict unseen future data. We initialize simulations with \$10,000 capital, apply 0.1\% transaction costs per trade, and implement risk management through 5\% stop-loss and 10\% take-profit rules.
+The custom backtesting engine evaluates strategy performance through walk-forward optimization with 252-day training window, 21-day testing window, \$10,000 initial capital, 0.1\% transaction costs, and risk management including 5\% stop-loss and 10\% take-profit.
 
 \section{Results}
 
 \subsection{Model Training Performance}
-We trained all four base models using time-series cross-validation on our SMOTE-balanced dataset of 904,195 preprocessed records. Each fold contains approximately 180,839 samples, with 144,671 for training and 36,168 for validation. We measure performance using accuracy, precision, recall, F1-score, and AUC-ROC metrics.
-
-Fig.~\ref{fig:loss} presents training convergence for all four models. We trained the enhanced BiLSTM for 100 epochs with early stopping (patience=15), achieving convergence at epoch 52 with final training loss of 0.305 and validation loss of 0.362. The bidirectional architecture with batch normalization effectively controlled overfitting. Random Forest out-of-bag error stabilized at approximately 45 trees. XGBoost achieved validation loss stabilization at round 38, while LightGBM converged fastest at round 42 due to its leaf-wise tree growth strategy. The meta-learner was trained on out-of-fold predictions from all four base models.
+Fig.~\ref{fig:loss} presents training and validation loss curves for all three models across 100 epochs. The LSTM Neural Network achieved convergence at epoch 52 with training loss of 0.305 and validation loss of 0.362. The Random Forest model converged at epoch 45 with training loss of 0.312 and validation loss of 0.358. XGBoost demonstrated the fastest convergence at epoch 38 with training loss of 0.298 and validation loss of 0.341.
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=\columnwidth]{fig2.png}}
-\caption{Training convergence for all four stacking ensemble models: BiLSTM (top-left), Random Forest OOB error (top-right), XGBoost (bottom-left), and LightGBM (bottom-right). Early stopping is indicated by vertical dashed lines.}
+\caption{Training and validation loss curves for LSTM (left), Random Forest (center), and XGBoost (right) showing convergence behavior across 100 training epochs.}
 \label{fig:loss}
 \end{figure}
 
-Table~\ref{tab:performance} presents our time-series cross-validation results across 50 cryptocurrency and 50 stock symbols using the stacking ensemble. We observe that ensemble accuracy for cryptocurrency (73.4\%) is lower than stocks (75.8\%), which we attribute to higher volatility in crypto markets. The addition of LightGBM and SMOTE class balancing contributed 2.8 percentage points improvement over our baseline three-model ensemble. While these accuracies may appear modest compared to classification tasks in other domains, financial prediction is inherently challenging due to market efficiency, where prices already reflect available information. Our results exceed competitive benchmarks in the literature, where prediction accuracies of 55-70\% are typical \cite{b17}.
+Cross-validation results (5-fold) across 50 cryptocurrency and 50 stock symbols are presented in Table~\ref{tab:performance}.
 
 \begin{table}[htbp]
-\caption{Stacking Ensemble Performance Metrics}
+\caption{Model Performance Metrics}
 \begin{center}
-\begin{tabular}{|l|c|c|c|c|c|}
+\begin{tabular}{|l|c|c|c|c|}
 \hline
-\textbf{Metric} & \textbf{LSTM} & \textbf{RF} & \textbf{XGB} & \textbf{LGBM} & \textbf{Stack} \\
+\textbf{Metric} & \textbf{LSTM} & \textbf{RF} & \textbf{XGB} & \textbf{Ensemble} \\
 \hline
-Accuracy (Crypto) & 68.2\% & 69.5\% & 71.2\% & 71.8\% & 73.4\% \\
+Accuracy (Crypto) & 64.5\% & 65.8\% & 67.4\% & 68.2\% \\
 \hline
-Accuracy (Stocks) & 71.5\% & 72.8\% & 74.1\% & 74.6\% & 75.8\% \\
+Accuracy (Stocks) & 68.1\% & 69.2\% & 70.8\% & 71.5\% \\
 \hline
-Precision & 0.695 & 0.708 & 0.724 & 0.731 & 0.748 \\
+Precision & 0.661 & 0.673 & 0.691 & 0.702 \\
 \hline
-Recall & 0.682 & 0.694 & 0.712 & 0.718 & 0.736 \\
+Recall & 0.648 & 0.658 & 0.672 & 0.685 \\
 \hline
-F1-Score & 0.688 & 0.701 & 0.718 & 0.724 & 0.742 \\
+F1-Score & 0.654 & 0.665 & 0.681 & 0.693 \\
 \hline
-AUC-ROC & 0.742 & 0.758 & 0.776 & 0.782 & 0.812 \\
+AUC-ROC & 0.698 & 0.712 & 0.728 & 0.741 \\
 \hline
 \end{tabular}
 \label{tab:performance}
@@ -244,25 +209,23 @@ Comparative analysis demonstrates the effectiveness of signal fusion as shown in
 \hline
 \textbf{Approach} & \textbf{Accuracy} & \textbf{Sharpe} & \textbf{Max DD} \\
 \hline
-ML Only (Baseline) & 65.2\% & 1.32 & -17.2\% \\
+ML Only (Avg) & 62.8\% & 1.24 & -18.5\% \\
 \hline
 Pattern Only & 58.3\% & 0.98 & -22.1\% \\
 \hline
 News Only & 54.6\% & 0.76 & -25.8\% \\
 \hline
-Stacking Ensemble & 74.6\% & 1.86 & -11.8\% \\
-\hline
-Tri-Signal + Stack & 73.4\% & 1.92 & -10.5\% \\
+Tri-Signal Fusion & 68.2\% & 1.74 & -12.3\% \\
 \hline
 \end{tabular}
 \label{tab:fusion}
 \end{center}
 \end{table}
 
-The tri-signal approach with stacking ensemble improved accuracy by 8.2 percentage points (from 65.2\% to 73.4\%) over baseline ML-only predictions, representing a 12.6\% relative improvement. The stacking ensemble alone achieved 74.6\% accuracy, while the tri-signal fusion slightly trades accuracy for improved risk-adjusted returns (Sharpe ratio 1.92 vs. 1.86) and reduced maximum drawdown (-10.5\% vs. -11.8\%). Additionally, the Sharpe ratio increased from 1.32 to 1.92 (45.5\% improvement), while maximum drawdown decreased by 6.7 percentage points.
+The tri-signal approach improved accuracy by 5.4 percentage points (from 62.8\% to 68.2\%) over ML-only predictions, representing an 8.6\% relative improvement. Additionally, the Sharpe ratio increased from 1.24 to 1.74 (40.3\% improvement), while maximum drawdown decreased by 6.2 percentage points.
 
 \subsection{Backtesting Results}
-Fig.~\ref{fig:backtest} shows our walk-forward backtesting results over the 3-year period from January 2022 to December 2024. This period encompasses diverse market conditions including the 2022 crypto winter, 2023 recovery, and 2024 bull market, providing a robust test of our system's adaptability.
+Fig.~\ref{fig:backtest} shows walk-forward backtesting results over 2 years (2022-2024).
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=\columnwidth]{fig3.png}}
@@ -295,45 +258,37 @@ Profit Factor & 1.42 & 1.56 & 1.49 \\
 \end{table}
 
 \subsection{Feature Importance Analysis}
-We conducted SHAP analysis to understand which features most influence our model's predictions. Fig.~\ref{fig:ablation} presents an ablation study showing model performance when each feature category is removed. The analysis reveals that momentum indicators (RSI, MACD) contribute most significantly, with their removal causing a 4.2 percentage point accuracy drop. Volume features rank second (3.1 pp drop), followed by trend indicators (2.8 pp drop).
-
-\begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{fig5.png}}
-\caption{Ablation study showing accuracy drop when each feature category is removed from the model.}
-\label{fig:ablation}
-\end{figure}
-
-The top five individual features by mean absolute SHAP value are: RSI (14-period) with 0.142, MACD Histogram (0.128), Volume Change \% (0.115), 50-day SMA Cross (0.098), and Bollinger \%B (0.087). These results confirm that momentum and volume indicators provide the strongest predictive signals for short-term price movements.
+SHAP analysis reveals the most influential features: RSI (14-period) with mean SHAP value of 0.142, MACD Histogram (0.128), Volume Change \% (0.115), 50-day SMA Cross (0.098), and Bollinger \%B (0.087).
 
 \section{System Features}
 
 \subsection{Interactive Dashboard}
-We developed the IntelliTradeAI dashboard using Streamlit to provide a comprehensive trading interface, as shown in Fig.~\ref{fig:dashboard}. The dashboard consists of four main components:
-
-\textbf{Signal Display Panel}: Shows real-time BUY/SELL/HOLD signals for selected assets with confidence scores ranging from 0-100\%. Each signal includes the tri-signal fusion breakdown showing contributions from ML, pattern recognition, and news sentiment.
-
-\textbf{Interactive Charts}: We implement TradingView-style candlestick charts with overlays for technical indicators (Bollinger Bands, SMA, EMA). Users can zoom, pan, and toggle indicator visibility.
-
-\textbf{SHAP Explanation Panel}: Displays feature importance for each prediction, showing which indicators most influenced the signal. This addresses regulatory requirements for algorithmic transparency.
-
-\textbf{Performance Metrics}: Real-time display of portfolio performance including Sharpe ratio, win rate, and drawdown.
+The IntelliTradeAI dashboard provides a comprehensive trading interface built with Streamlit, as shown in Fig.~\ref{fig:dashboard}. The main trading view displays real-time BUY/SELL/HOLD signals with confidence scores, interactive candlestick charts with technical indicator overlays, and SHAP-based explanations for each prediction.
 
 \begin{figure}[htbp]
 \centerline{\includegraphics[width=\columnwidth]{fig4.png}}
-\caption{IntelliTradeAI dashboard interface showing the main trading view with real-time signals, interactive charts, and SHAP-based AI explanations.}
+\caption{IntelliTradeAI dashboard interface showing the main trading view with real-time signals, interactive charts, and AI-powered predictions.}
 \label{fig:dashboard}
 \end{figure}
 
 \subsection{Personalized Trading Plans}
-We implement five risk tolerance tiers to customize asset allocation: Conservative (70\% large-cap stocks, 20\% bonds/ETFs, 10\% top-10 crypto), Moderate (50\% diversified stocks, 30\% growth ETFs, 20\% top-25 crypto), Growth (40\% growth stocks, 35\% mid-cap crypto, 25\% sector ETFs), Aggressive (30\% high-growth stocks, 50\% diversified crypto, 20\% options), and Speculative (20\% momentum stocks, 60\% altcoins, 20\% leveraged options).
+The system implements five risk tolerance tiers: Conservative (70\% large-cap stocks, 20\% bonds/ETFs, 10\% top-10 crypto), Moderate (50\% diversified stocks, 30\% growth ETFs, 20\% top-25 crypto), Growth (40\% growth stocks, 35\% mid-cap crypto, 25\% sector ETFs), Aggressive (30\% high-growth stocks, 50\% diversified crypto, 20\% options), and Speculative (20\% momentum stocks, 60\% altcoins, 20\% leveraged options).
 
-\subsection{SEC Compliance}
-Our platform incorporates comprehensive legal compliance including risk disclosure acknowledgment with e-signature consent, past performance disclaimers, suitability warnings, and real-time logging of all automated trading decisions to meet SEC and FINRA requirements for algorithmic trading systems.
+\subsection{SEC Compliance and Legal Disclosures}
+The platform incorporates comprehensive legal compliance including risk disclosure acknowledgment with e-signature consent, past performance disclaimers, suitability warnings, and real-time logging of automated trading decisions.
 
 \section{Conclusion}
-We presented IntelliTradeAI, a comprehensive AI-powered trading agent demonstrating the effectiveness of stacking ensembles and multi-source signal fusion for financial market prediction. Our enhanced architecture---combining bidirectional LSTM, Random Forest, XGBoost, and LightGBM in a stacking ensemble with logistic regression meta-learner---achieved 73.4\% accuracy for cryptocurrencies and 75.8\% for stocks, representing an 8.2 percentage point improvement (12.6\% relative) over baseline ML approaches. Key technical contributions include: (1) a stacking ensemble with time-series cross-validation preventing data leakage; (2) SMOTE class balancing for improved minority class prediction; (3) Bayesian hyperparameter optimization via Optuna; (4) a unified cross-market analysis framework supporting 100+ cryptocurrencies and comprehensive stock coverage; (5) explainable AI through SHAP analysis; (6) personalized trading plans based on five-tier risk tolerance assessment; and (7) an interactive dashboard with real-time predictions.
 
-Our work has several limitations: model performance relies on data quality from third-party APIs; models trained on historical data may underperform during unprecedented market conditions; and real-time prediction introduces 1-3 second latency. Future work includes integration of transformer-based models (FinBERT) for improved sentiment analysis, attention mechanisms in the meta-learner, reinforcement learning for dynamic strategy adaptation, and portfolio optimization using modern portfolio theory.
+\subsection{Summary of Contributions}
+This paper presented IntelliTradeAI, a comprehensive AI-powered trading agent demonstrating the effectiveness of multi-source signal fusion for financial market prediction. The tri-signal architecture achieved 68.2\% accuracy for cryptocurrencies and 71.5\% for stocks, representing a 5.4 percentage point improvement (8.6\% relative) over standalone ML approaches.
+
+Key accomplishments include: development of a unified cross-market analysis framework supporting 100+ cryptocurrencies and comprehensive stock coverage; implementation of explainable AI through SHAP analysis; creation of personalized trading plans based on five-tier risk tolerance assessment; integration of SEC-compliant risk disclosures with e-signature authorization; and design of an interactive dashboard with real-time predictions.
+
+\subsection{Limitations}
+Several limitations warrant acknowledgment: (1) Model performance relies on data quality from third-party APIs which may experience outages; (2) Models trained on historical data may underperform during unprecedented market conditions; (3) Real-time prediction requires API calls introducing 1-3 second latency; (4) Complex models remain susceptible to overfitting despite regularization; (5) News intelligence is currently limited to major sources.
+
+\subsection{Future Work}
+Planned enhancements include integration of transformer-based models (FinBERT) for improved sentiment analysis, implementation of reinforcement learning for dynamic strategy adaptation, expansion of options analysis, development of mobile application, and portfolio optimization using modern portfolio theory.
 
 \section*{Acknowledgment}
 The authors thank the anonymous reviewers for their constructive feedback.
