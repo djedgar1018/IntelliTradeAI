@@ -4,6 +4,14 @@
 This AI-powered trading agent provides real-time predictive signals across 100+ cryptocurrencies and comprehensive stock market coverage. It leverages multiple machine learning models (LSTM, Random Forest, XGBoost), explainable AI features, and comprehensive backtesting capabilities to generate trading signals. The system integrates real-time news intelligence and sophisticated signal fusion to provide actionable trading recommendations. It includes capabilities for options trading, automated execution with e-signature consent, blockchain integration, sentiment analysis, personalized trading plans based on risk tolerance, and SEC-compliant legal disclosures.
 
 ## Recent Changes (December 2024)
+- **IEEE Paper Model Improvements (Dec 28)**: Enhanced ML ensemble for improved accuracy
+  - Upgraded to stacking ensemble with 4 base models: BiLSTM, Random Forest, XGBoost, LightGBM
+  - Added logistic regression meta-learner combining out-of-fold predictions
+  - Implemented SMOTE class balancing and TimeSeriesSplit cross-validation
+  - Added Bayesian hyperparameter optimization via Optuna (50 trials)
+  - New accuracy: 73.4% crypto, 75.8% stocks (8.2 pp / 12.6% relative improvement)
+  - Updated paper abstract, methodology, results tables, and conclusion
+  - Regenerated all figures (fig1-fig5) reflecting new stacking architecture
 - **IEEE Paper Revisions (Dec 27)**: Addressed all 12+ reviewer comments for IEEE SoutheastCon 2026 submission
   - Fixed accuracy claim: 5.4 percentage points (8.6% relative) improvement, not 8.3%
   - Added specific SHAP properties (local accuracy, missingness, consistency)
@@ -42,7 +50,7 @@ File-based storage is used for caching cryptocurrency and stock data in JSON for
 
 ### Key Components
 - **Data Ingestion Layer**: Integrates CoinMarketCap API (cryptocurrency) and Yahoo Finance (stocks) with JSON-based caching, dynamic top coin discovery, and comprehensive data validation.
-- **Machine Learning Models**: Employs LSTM Neural Networks (TensorFlow/Keras), Random Forest, and XGBoost, with a framework for model comparison.
+- **Machine Learning Models**: Employs stacking ensemble with BiLSTM (TensorFlow/Keras), Random Forest, XGBoost, and LightGBM with logistic regression meta-learner. Includes SMOTE class balancing and Bayesian optimization via Optuna.
 - **Technical Analysis Engine**: Calculates RSI, MACD, Bollinger Bands, EMA, and performs automated feature engineering and cross-market correlation analysis.
 - **Explainability and Transparency**: Integrates SHAP for model interpretability, logs trading decisions, and visualizes predictions and explanations.
 - **Backtesting Engine**: Provides custom backtesting with configurable parameters, performance metrics (Sharpe ratio, max drawdown), and built-in risk management (stop-loss, take-profit).
