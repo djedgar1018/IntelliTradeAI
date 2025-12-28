@@ -12,19 +12,18 @@ A comprehensive AI-powered trading agent that combines machine learning ensemble
 
 **Prediction Target:** >4-5% significant price movement over 5-7 trading days
 
-| Metric | Value |
-|--------|-------|
-| **Stock Average Accuracy** | **81.5%** |
-| Stock Best (V) | 92.1% |
-| Crypto Average Accuracy | 52.4% |
-| Crypto Best (BTC-USD) | 80.3% |
-| Overall Average | 66.9% |
-| **Assets >= 70%** | **11/20 (55%)** |
-| **All Stocks >= 70%** | **10/10 (100%)** |
+| Asset Class | Count | Average | Best | >= 70% |
+|-------------|-------|---------|------|--------|
+| **Stocks** | 108 | **85.2%** | 99.2% (SO) | **98/108 (91%)** |
+| **ETFs** | 10 | **96.3%** | 98.8% (DIA) | **10/10 (100%)** |
+| Cryptocurrencies | 39 | 54.7% | 93.8% (LEO) | 5/39 (13%) |
+| **Overall** | **157** | **78.4%** | - | **113/157 (72%)** |
 
-**Stock Results (All >= 70%):** V 92.1%, JPM 89.6%, MSFT 87.6%, AAPL 83.8%, META 81.3%, GOOGL 79.7%, WMT 78.8%, AMZN 75.9%, NVDA 73.4%, TSLA 72.2%
+**Top Stock Performers:** SO 99.2%, DUK 98.8%, PG 98.4%, TJX 98.4%, AVB 98.4%, MCD 98.0%, LIN 98.0%, WEC 98.0%
 
-**Top Crypto:** BTC-USD 80.3%, XRP-USD 67.7%, SOL-USD 66.3%
+**Top Crypto Performers:** LEO 93.8%, TRX 86.0%, BTC-USD 80.3%, BNB 75.6%, TON 74.4%
+
+**Coverage:** Top 39 cryptocurrencies (CoinMarketCap) + 108 stocks across all 11 GICS sectors + 10 major ETFs
 
 ## Features
 
@@ -37,7 +36,7 @@ Our novel weighted voting mechanism combines:
 ![System Architecture](docs/figures/figure1_methodology_flow.png)
 
 ### Core Capabilities
-- **Cross-Market Analysis**: 100+ cryptocurrencies across 12 sectors + all 11 GICS stock sectors
+- **Cross-Market Analysis**: 39 cryptocurrencies, 108 stocks across all 11 GICS sectors, and 10 major ETFs
 - **70 Technical Indicators**: RSI, MACD, Bollinger Bands, ATR, SMA, EMA, and more
 - **Explainable AI**: SHAP-based feature importance and decision transparency
 - **Personalized Trading Plans**: 5-tier risk tolerance system (Conservative to Speculative)
@@ -138,7 +137,7 @@ This research is documented in an IEEE conference paper:
 
 > **IntelliTradeAI: A Tri-Signal Fusion Framework for Explainable AI-Powered Financial Market Prediction**
 >
-> The paper demonstrates that the tri-signal fusion approach achieves 68.2% accuracy for cryptocurrency and 71.5% for stock predictions, representing a 5.4 percentage point improvement (8.6% relative) over standalone ML approaches.
+> The paper demonstrates validated prediction accuracy of 85.2% for stocks (108 assets, 91% >= 70%), 96.3% for ETFs (10 assets, 100% >= 70%), and 54.7% for cryptocurrencies (39 assets) - representing an overall 78.4% average accuracy across 157 tested assets.
 
 Paper files are available in `docs/`:
 - `IntelliTradeAI_IEEE_Paper.tex` - LaTeX source

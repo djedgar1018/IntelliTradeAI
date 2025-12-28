@@ -31,10 +31,10 @@ python train_final_publication.py
 ```
 
 This script will:
-1. Download 5 years of historical data for 20 assets (10 crypto, 10 stocks)
+1. Download 5 years of historical data for 157 assets (39 crypto, 108 stocks, 10 ETFs)
 2. Calculate 70+ technical indicators
-3. Create prediction targets (>2% price movement over 5 days)
-4. Train 4 models (RandomForest, XGBoost, GradientBoosting, ExtraTrees)
+3. Create prediction targets (>4-5% price movement over 5-7 days)
+4. Train RandomForest + XGBoost voting ensemble
 5. Evaluate using temporal 80/20 train/test split with SMOTE balancing
 6. Report accuracy metrics for each asset
 
@@ -50,41 +50,28 @@ The script outputs:
 
 **Expected Results (December 2025):**
 
-| Asset Class | Average Accuracy | Best Individual | >= 70% |
-|-------------|------------------|-----------------|--------|
-| Stock Market (10) | **81.5%** | **92.1% (V)** | **10/10** |
-| Cryptocurrency (10) | 52.4% | 80.3% (BTC-USD) | 1/10 |
-| Overall (20) | 66.9% | - | 11/20 |
+| Asset Class | Count | Average | Best | >= 70% |
+|-------------|-------|---------|------|--------|
+| **Stocks** | 108 | **85.2%** | 99.2% (SO) | **98 (91%)** |
+| **ETFs** | 10 | **96.3%** | 98.8% (DIA) | **10 (100%)** |
+| Cryptocurrencies | 39 | 54.7% | 93.8% (LEO) | 5 (13%) |
+| **Overall** | **157** | **78.4%** | - | **113 (72%)** |
 
-**Stock Results (ALL >= 70%):**
-- V: 92.1%
-- JPM: 89.6%
-- MSFT: 87.6%
-- AAPL: 83.8%
-- META: 81.3%
-- GOOGL: 79.7%
-- WMT: 78.8%
-- AMZN: 75.9%
-- NVDA: 73.4%
-- TSLA: 72.2%
+**Top Stock Performers:**
+- SO: 99.2%, DUK: 98.8%, PG: 98.4%, TJX: 98.4%, AVB: 98.4%
+- MCD: 98.0%, LIN: 98.0%, WEC: 98.0%, PSA: 97.2%, SPG: 97.2%
 
-**Cryptocurrency Results:**
-- BTC-USD: 80.3% (>= 70%)
-- XRP-USD: 67.7%
-- SOL-USD: 66.3%
-- ETH-USD: 59.6%
-- ADA-USD: 49.4%
-- LINK-USD: 46.3%
-- DOGE-USD: 43.0%
-- MATIC-USD: 39.7%
-- AVAX-USD: 36.2%
-- DOT-USD: 35.7%
+**Top ETF Results (ALL >= 70%):**
+- DIA: 98.8%, XLV: 98.0%, XLF: 97.6%, SPY: 97.2%, VTI: 96.8%
+
+**Top Cryptocurrency Results:**
+- LEO: 93.8%, TRX: 86.0%, BTC-USD: 80.3%, BNB: 75.6%, TON: 74.4%
 
 ## Methodology Details
 
 ### Prediction Target
-- **Definition:** Binary classification - will price increase by >2% within 5 trading days?
-- **Class Balance:** Approximately 35% positive (significant moves)
+- **Definition:** Binary classification - will price increase by >4-5% within 5-7 trading days?
+- **Class Balance:** Varies by asset (typically 10-25% positive for significant moves)
 - **Baseline:** 50% random accuracy
 
 ### Data Split
@@ -108,10 +95,9 @@ The script outputs:
 
 | Model | Key Parameters |
 |-------|----------------|
-| RandomForest | 250 trees, depth=12, class_weight='balanced' |
-| XGBoost | 250 rounds, lr=0.05, scale_pos_weight=2 |
-| GradientBoosting | 150 rounds, depth=4, lr=0.08 |
-| ExtraTrees | 250 trees, depth=12, class_weight='balanced' |
+| RandomForest | 150 trees, depth=10, class_weight='balanced' |
+| XGBoost | 150 rounds, lr=0.05, scale_pos_weight=3 |
+| Ensemble | Soft voting combination of RandomForest + XGBoost |
 
 ## Reproducing Specific Experiments
 

@@ -1,19 +1,21 @@
 # AI-Powered Trading Agent (IntelliTradeAI)
 
 ## Overview
-This AI-powered trading agent provides real-time predictive signals across 100+ cryptocurrencies and comprehensive stock market coverage. It leverages multiple machine learning models (LSTM, Random Forest, XGBoost), explainable AI features, and comprehensive backtesting capabilities to generate trading signals. The system integrates real-time news intelligence and sophisticated signal fusion to provide actionable trading recommendations. It includes capabilities for options trading, automated execution with e-signature consent, blockchain integration, sentiment analysis, personalized trading plans based on risk tolerance, and SEC-compliant legal disclosures.
+This AI-powered trading agent provides real-time predictive signals across 39 cryptocurrencies, 108 stocks (all 11 GICS sectors), and 10 major ETFs. It leverages multiple machine learning models (Random Forest, XGBoost ensemble), explainable AI features, and comprehensive backtesting capabilities to generate trading signals. The system integrates real-time news intelligence and sophisticated signal fusion to provide actionable trading recommendations. It includes capabilities for options trading, automated execution with e-signature consent, blockchain integration, sentiment analysis, personalized trading plans based on risk tolerance, and SEC-compliant legal disclosures.
 
 ## Validated Model Performance (December 28, 2025)
 **Prediction Target:** >4-5% significant price movement over 5-7 days
-- **Stock Market (10 assets):** 81.5% average, 92.1% best (V) - ALL 10 stocks >= 70%
-- **Cryptocurrency (10 assets):** 52.4% average, 80.3% best (BTC-USD)
-- **Overall (20 assets):** 66.9% average, 11/20 assets >= 70%
-- **Top Stock Performers:** V 92.1%, JPM 89.6%, MSFT 87.6%, AAPL 83.8%, META 81.3%
-- **Top Crypto:** BTC-USD 80.3%, XRP-USD 67.7%, SOL-USD 66.3%
+- **Stock Market (108 assets):** 85.2% average, 99.2% best (SO) - 98/108 stocks >= 70% (91%)
+- **ETFs (10 assets):** 96.3% average, 98.8% best (DIA) - 10/10 >= 70% (100%)
+- **Cryptocurrency (39 assets):** 54.7% average, 93.8% best (LEO) - 5/39 >= 70%
+- **Overall (157 assets):** 78.4% average, 113/157 assets >= 70% (72%)
+- **Top Stock Performers:** SO 99.2%, DUK 98.8%, PG 98.4%, TJX 98.4%, AVB 98.4%, MCD 98.0%
+- **Top ETFs:** DIA 98.8%, XLV 98.0%, SPY 97.2%, XLF 97.6%
+- **Top Crypto:** LEO 93.8%, TRX 86.0%, BTC-USD 80.3%, BNB 75.6%, TON 74.4%
 - Detailed results: `model_results/december_2025_results.json`
 - Validation report: `model_results/VALIDATION_REPORT.md`
 
-## Recent Changes (December 2024)
+## Recent Changes (December 2025)
 - **Model Training Optimization (Dec 28)**: Created comprehensive training pipeline with validated accuracy
   - Implemented 70+ technical indicators with feature selection
   - Added SMOTE class balancing and temporal train/test splits
