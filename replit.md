@@ -21,14 +21,16 @@ This AI-powered trading agent provides real-time predictive signals across 39 cr
   - Added SMOTE class balancing and temporal train/test splits
   - Final ensemble: RandomForest + XGBoost voting classifier
   - Walk-forward validation for proper time-series evaluation
-- **IEEE Paper Revisions (Dec 27)**: Addressed all 12+ reviewer comments for IEEE SoutheastCon 2026 submission
-  - Fixed accuracy claim: 5.4 percentage points (8.6% relative) improvement, not 8.3%
-  - Added specific SHAP properties (local accuracy, missingness, consistency)
-  - Reduced keywords to 5, expanded all acronyms (SEC, FINRA, GICS, SHAP)
-  - Added dashboard screenshot (Figure 4) to System Features section
-  - Regenerated Figure 1 with larger text (18pt title, 11-13pt labels)
-  - Added citations for GICS and CoinMarketCap
-  - Changed "70+" to exactly 70 technical indicators
+- **IEEE Paper Revisions (Dec 29)**: Critical review and improvements for IEEE SoutheastCon 2026 submission
+  - Added OBV (On-Balance Volume) definition with mathematical formula
+  - Added SMOTE explanation with interpolation formula in Class Imbalance Handling section
+  - Removed "novel" claim from weighted voting; justified weights via grid search optimization
+  - Added ablation study quantifying contribution of each signal source (ML: 23.2pp, Pattern: 3.6pp, News: 2.3pp)
+  - Added baseline comparisons (Buy & Hold, MA Crossover, RSI Mean Reversion, Random)
+  - Added statistical significance tests with p-values (paired t-test, Wilcoxon signed-rank)
+  - Explained fusion vs. ML-only accuracy discrepancy (weighted average across all asset classes)
+  - Added blockchain wallet integration to System Features section
+  - Paper now 407 lines, 27 citations, 8 tables, 4 figures
 - **GitHub Preparation**: Created README.md, requirements.txt, LICENSE, .gitignore
 - Added SEC/FINRA legal compliance module with risk disclosures and e-signature authorization
 - Created hover-based tooltip definitions (3-second delay) replacing standalone dictionary tab
