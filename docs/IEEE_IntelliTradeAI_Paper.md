@@ -248,7 +248,17 @@ The system implements five risk tolerance tiers derived from user onboarding sur
 4. **Aggressive** (Tier 4): 30% high-growth stocks, 50% diversified crypto, 20% options
 5. **Speculative** (Tier 5): 20% momentum stocks, 60% altcoins, 20% leveraged options
 
-### B. SEC Compliance and Legal Disclosures
+### B. Blockchain Wallet Integration
+
+The system includes secure cryptocurrency wallet management through Web3.py integration. The SecureWalletManager component supports:
+- Ethereum wallet creation with encrypted private key storage using PBKDF2 key derivation (100,000 iterations)
+- Real-time balance queries via Infura API
+- Transaction signing and broadcasting
+- QR code generation for wallet addresses
+
+Private keys are encrypted using Fernet symmetric encryption, ensuring secure storage while enabling transaction authorization.
+
+### C. SEC Compliance and Legal Disclosures
 
 The platform incorporates comprehensive legal compliance:
 - Risk disclosure acknowledgment with e-signature consent
@@ -257,7 +267,7 @@ The platform incorporates comprehensive legal compliance:
 - Suitability warnings based on risk tolerance
 - Real-time logging of all automated trading decisions
 
-### C. Interactive Dashboard Features
+### D. Interactive Dashboard Features
 
 The Streamlit-based interface provides:
 - Real-time signal predictions with confidence scores

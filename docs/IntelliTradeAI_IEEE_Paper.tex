@@ -282,6 +282,9 @@ The IntelliTradeAI dashboard provides a comprehensive trading interface built wi
 \subsection{Personalized Trading Plans}
 The system implements five risk tolerance tiers: Conservative (70\% large-cap stocks, 20\% bonds/ETFs, 10\% top-10 crypto), Moderate (50\% diversified stocks, 30\% growth ETFs, 20\% top-25 crypto), Growth (40\% growth stocks, 35\% mid-cap crypto, 25\% sector ETFs), Aggressive (30\% high-growth stocks, 50\% diversified crypto, 20\% options), and Speculative (20\% momentum stocks, 60\% altcoins, 20\% leveraged options).
 
+\subsection{Blockchain Wallet Integration}
+The system includes secure cryptocurrency wallet management through Web3.py integration. The SecureWalletManager component supports Ethereum wallet creation with encrypted private key storage using PBKDF2 key derivation (100,000 iterations), real-time balance queries via Infura API, transaction signing and broadcasting, and QR code generation for wallet addresses. Private keys are encrypted using Fernet symmetric encryption, ensuring secure storage while enabling transaction authorization.
+
 \subsection{SEC Compliance and Legal Disclosures}
 The platform incorporates comprehensive legal compliance including risk disclosure acknowledgment with e-signature consent, past performance disclaimers, suitability warnings, and real-time logging of automated trading decisions.
 
