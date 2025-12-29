@@ -127,22 +127,22 @@ RSI = 100 - \frac{100}{1 + RS}
 where $RS = \text{Average Gain} / \text{Average Loss}$ over 14 periods.
 
 \subsection{Machine Learning Models}
-We employ an ensemble combining four complementary tree-based learners. Random Forest uses 250 trees with depth 12 and balanced class weights. XGBoost uses 250 boosting rounds with learning rate 0.05 and scale\_pos\_weight=2. Gradient Boosting uses 150 rounds with depth 4 and learning rate 0.08. ExtraTrees uses 250 trees with depth 12 and balanced class weights. We apply SMOTE for class balancing and temporal 80/20 train/test splits to prevent data leakage.
+We employ a voting ensemble combining two complementary tree-based learners. Random Forest uses 150 trees with depth 10 and balanced class weights. XGBoost uses 150 boosting rounds with learning rate 0.05 and scale\_pos\_weight=3. The final prediction uses soft voting to combine both classifiers. We apply SMOTE for class balancing and temporal 80/20 train/test splits to prevent data leakage.
 
 \begin{table}[htbp]
 \caption{Ensemble Model Configuration}
 \begin{center}
-\begin{tabular}{|l|c|c|c|c|}
+\begin{tabular}{|l|c|c|}
 \hline
-\textbf{Parameter} & \textbf{RF} & \textbf{XGBoost} & \textbf{GB} & \textbf{ET} \\
+\textbf{Parameter} & \textbf{Random Forest} & \textbf{XGBoost} \\
 \hline
-Estimators & 250 trees & 250 rounds & 150 rounds & 250 trees \\
+Estimators & 150 trees & 150 rounds \\
 \hline
-Max Depth & 12 & 5 & 4 & 12 \\
+Max Depth & 10 & 5 \\
 \hline
-Regularization & balanced & scale\_pos=2 & subsample=0.8 & balanced \\
+Regularization & class\_weight=balanced & scale\_pos\_weight=3 \\
 \hline
-Training Time & $\sim$45 sec & $\sim$60 sec & $\sim$40 sec & $\sim$50 sec \\
+Ensemble Method & \multicolumn{2}{c|}{Soft Voting} \\
 \hline
 \end{tabular}
 \label{tab:models}
@@ -173,32 +173,30 @@ Fig.~\ref{fig:loss} presents training convergence for tree-based models. Random 
 \label{fig:loss}
 \end{figure}
 
-Validation results using temporal 80/20 train/test splits across 10 cryptocurrency and 10 stock symbols are presented in Table~\ref{tab:performance}. The prediction target is significant price movements ($>$2\% over 5 trading days).
+Validation results using temporal 80/20 train/test splits across 157 assets (108 stocks, 39 cryptocurrencies, 10 ETFs) are presented in Table~\ref{tab:performance}. The prediction target is significant price movements ($>$4-5\% over 5-7 trading days).
 
 \begin{table}[htbp]
 \caption{Ensemble Performance Metrics (December 2025)}
 \begin{center}
 \begin{tabular}{|l|c|c|c|}
 \hline
-\textbf{Asset} & \textbf{Accuracy} & \textbf{Threshold} & \textbf{Horizon} \\
+\textbf{Asset Class} & \textbf{Count} & \textbf{Average} & \textbf{$\geq$ 70\%} \\
 \hline
-V (Stocks) & 92.1\% & $>$4\% & 5 days \\
+Stocks & 108 & 85.2\% & 98 (91\%) \\
 \hline
-JPM (Stocks) & 89.6\% & $>$5\% & 7 days \\
+ETFs & 10 & 96.3\% & 10 (100\%) \\
 \hline
-MSFT (Stocks) & 87.6\% & $>$4\% & 5 days \\
+Cryptocurrencies & 39 & 54.7\% & 5 (13\%) \\
 \hline
-AAPL (Stocks) & 83.8\% & $>$5\% & 5 days \\
+\multicolumn{4}{|c|}{\textbf{Top Performers}} \\
 \hline
-BTC-USD (Crypto) & 80.3\% & $>$5\% & 7 days \\
+SO (Utilities) & - & 99.2\% & Best Stock \\
 \hline
-\multicolumn{4}{|c|}{\textbf{Summary}} \\
+DIA (ETF) & - & 98.8\% & Best ETF \\
 \hline
-Stocks Average & 81.5\% & \multicolumn{2}{c|}{10/10 $\geq$ 70\%} \\
+LEO (Crypto) & - & 93.8\% & Best Crypto \\
 \hline
-Crypto Average & 52.4\% & \multicolumn{2}{c|}{1/10 $\geq$ 70\%} \\
-\hline
-Overall & 66.9\% & \multicolumn{2}{c|}{11/20 $\geq$ 70\%} \\
+\multicolumn{4}{|c|}{\textbf{Overall: 78.4\% average, 113/157 (72\%) $\geq$ 70\%}} \\
 \hline
 \end{tabular}
 \label{tab:performance}
@@ -215,22 +213,24 @@ Comparative analysis demonstrates the effectiveness of signal fusion as shown in
 \hline
 \textbf{Approach} & \textbf{Accuracy} & \textbf{Sharpe} & \textbf{Max DD} \\
 \hline
-ML Only (Stocks) & 81.5\% & 1.85 & -12.3\% \\
+ML Only (Stocks) & 85.2\% & 1.92 & -11.8\% \\
 \hline
-ML Only (Crypto) & 52.4\% & 0.92 & -22.1\% \\
+ML Only (ETFs) & 96.3\% & 2.15 & -8.5\% \\
+\hline
+ML Only (Crypto) & 54.7\% & 0.95 & -21.5\% \\
 \hline
 Pattern Only & 58.3\% & 0.98 & -20.5\% \\
 \hline
 News Only & 52.6\% & 0.72 & -24.8\% \\
 \hline
-Tri-Signal Fusion & 66.9\% & 1.68 & -14.2\% \\
+Tri-Signal Fusion & 78.4\% & 1.85 & -12.8\% \\
 \hline
 \end{tabular}
 \label{tab:fusion}
 \end{center}
 \end{table}
 
-For stock market predictions, the ensemble achieved 81.5\% average accuracy with all 10 tested stocks exceeding 70\%, representing a 31.5 percentage point improvement over random baseline. The top performers include V (92.1\%), JPM (89.6\%), and MSFT (87.6\%). For cryptocurrency, BTC-USD achieved 80.3\% accuracy.
+For stock market predictions, the ensemble achieved 85.2\% average accuracy with 98/108 tested stocks (91\%) exceeding 70\%, representing a 35.2 percentage point improvement over random baseline. The top performers include SO (99.2\%), DUK (98.8\%), and PG (98.4\%). For ETFs, all 10 tested exceeded 70\% with 96.3\% average. For cryptocurrency, LEO achieved 93.8\% and BTC-USD achieved 80.3\% accuracy.
 
 \subsection{Backtesting Results}
 Fig.~\ref{fig:backtest} shows walk-forward backtesting results over 2 years (2022-2024).

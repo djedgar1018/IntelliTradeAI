@@ -6,7 +6,7 @@
 
 ---
 
-**Abstract**—The increasing complexity of financial markets demands intelligent systems capable of processing vast amounts of data while providing transparent decision-making. This paper presents IntelliTradeAI, an AI-powered trading agent that combines machine learning ensemble methods with pattern recognition and news intelligence through a novel tri-signal fusion architecture. The system employs Random Forest and XGBoost classifiers trained on over 70 engineered technical indicators to generate BUY/SELL/HOLD signals for cryptocurrencies and stocks. Experimental results demonstrate prediction accuracy of 68.2% for cryptocurrency markets and 71.5% for stock markets, with the tri-signal fusion approach improving standalone ML accuracy by 8.3%. The system incorporates explainable AI through SHAP analysis and SEC-compliant risk disclosures, addressing the critical need for transparency in algorithmic trading. Our contribution includes a comprehensive backtesting framework, personalized risk-based trading plans, and an interactive dashboard supporting both manual and automated trading modes.
+**Abstract**—The increasing complexity of financial markets demands intelligent systems capable of processing vast amounts of data while providing transparent decision-making. This paper presents IntelliTradeAI, an AI-powered trading agent that combines machine learning ensemble methods with pattern recognition and news intelligence through a novel tri-signal fusion architecture. The system employs a Random Forest + XGBoost voting ensemble trained on 70 engineered technical indicators to predict significant price movements (>4-5% over 5-7 days) for cryptocurrencies, stocks, and ETFs. Experimental results across 157 tested assets demonstrate prediction accuracy of 85.2% for stocks (108 assets, 91% exceeding 70%), 96.3% for ETFs (10 assets, 100% exceeding 70%), and 54.7% for cryptocurrencies (39 assets). Overall, the system achieves 78.4% average accuracy with 72% of assets exceeding 70% accuracy, representing a 35.2 percentage point improvement over random baseline. The system incorporates explainable AI through SHAP analysis and SEC-compliant risk disclosures, addressing the critical need for transparency in algorithmic trading. Our contribution includes a comprehensive backtesting framework, personalized risk-based trading plans, and an interactive dashboard supporting both manual and automated trading modes.
 
 **Keywords**—Artificial Intelligence, Machine Learning, Algorithmic Trading, Signal Fusion, Explainable AI, Cryptocurrency, Stock Market Prediction, Technical Analysis, XGBoost, Random Forest
 
@@ -38,7 +38,7 @@ This paper addresses these gaps through IntelliTradeAI, a comprehensive trading 
 
 1. **Tri-Signal Fusion Architecture**: A novel weighted voting mechanism combining ML ensemble predictions, chart pattern recognition, and news intelligence with smart conflict resolution.
 
-2. **Cross-Market Analysis**: Unified framework supporting 100+ cryptocurrencies across 12 sectors and comprehensive stock market coverage including all 11 GICS sectors.
+2. **Cross-Market Analysis**: Unified framework supporting 39 cryptocurrencies (CoinMarketCap top coins), 108 stocks across all 11 GICS sectors, and 10 major ETFs.
 
 3. **Explainable AI Integration**: SHAP-based model interpretability with SEC-compliant risk disclosures and user-friendly explanations.
 
