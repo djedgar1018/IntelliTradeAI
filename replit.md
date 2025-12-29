@@ -30,7 +30,11 @@ This AI-powered trading agent provides real-time predictive signals across 39 cr
   - Added statistical significance tests with p-values (paired t-test, Wilcoxon signed-rank)
   - Explained fusion vs. ML-only accuracy discrepancy (weighted average across all asset classes)
   - Added blockchain wallet integration to System Features section
-  - Paper now 407 lines, 27 citations, 8 tables, 4 figures
+  - Added comparison table showing IntelliTradeAI vs existing platforms
+  - Added 95% confidence intervals to key metrics
+  - Added reproducibility details (random seed 42, exact train/test dates, 5-fold CV)
+  - Added detailed grid search parameter ranges for weight optimization
+  - Paper now ~440 lines, 27 citations, 9 tables, 4 figures
 - **GitHub Preparation**: Created README.md, requirements.txt, LICENSE, .gitignore
 - Added SEC/FINRA legal compliance module with risk disclosures and e-signature authorization
 - Created hover-based tooltip definitions (3-second delay) replacing standalone dictionary tab

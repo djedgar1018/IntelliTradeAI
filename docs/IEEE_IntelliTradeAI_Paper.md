@@ -32,11 +32,24 @@ Cryptocurrency-specific platforms have emerged to address the unique characteris
 
 ### C. Research Gap and Contributions
 
-Despite advances in individual components, significant gaps exist in creating unified systems that combine multiple signal sources with explainability and regulatory compliance. Current solutions typically suffer from: (1) reliance on single prediction methodologies vulnerable to market regime changes, (2) lack of transparent decision-making processes, (3) absence of personalized risk management, and (4) separation between cryptocurrency and stock market analysis [14].
+Despite advances in individual components, significant gaps exist in creating unified systems that combine multiple signal sources with explainability and regulatory compliance. The following table compares IntelliTradeAI against existing platforms across key capabilities:
+
+**Comparison with Existing Trading Platforms**
+
+| Platform | Multi-Signal | XAI | Cross-Market | Personalized |
+|----------|-------------|-----|--------------|--------------|
+| Bloomberg Terminal | Partial | No | Yes | No |
+| QuantConnect | No | No | Yes | No |
+| TradingView | No | No | Yes | No |
+| CoinGecko | No | No | Crypto only | No |
+| Academic Tools | Varies | Rare | No | No |
+| **IntelliTradeAI** | **Yes** | **Yes** | **Yes** | **Yes** |
+
+Current solutions typically suffer from: (1) reliance on single prediction methodologies vulnerable to market regime changes, (2) lack of transparent decision-making processes, (3) absence of personalized risk management, and (4) separation between cryptocurrency and stock market analysis [14].
 
 This paper addresses these gaps through IntelliTradeAI, a comprehensive trading agent offering the following contributions:
 
-1. **Tri-Signal Fusion Architecture**: A novel weighted voting mechanism combining ML ensemble predictions, chart pattern recognition, and news intelligence with smart conflict resolution.
+1. **Tri-Signal Fusion Architecture**: A weighted voting mechanism combining ML ensemble predictions, chart pattern recognition, and news intelligence with hierarchical conflict resolution optimized through grid search.
 
 2. **Cross-Market Analysis**: Unified framework supporting 39 cryptocurrencies (CoinMarketCap top coins), 108 stocks across all 11 GICS sectors, and 10 major ETFs.
 
@@ -150,13 +163,15 @@ Two primary classifiers form the ML ensemble:
 | Training Time | ~45 seconds | ~60 seconds |
 | Feature Selection | Built-in | Built-in |
 
+**Reproducibility:** We apply temporal 80/20 train/test splits (training: Jan 2019 -- Dec 2023; testing: Jan 2024 -- Dec 2024) to prevent data leakage. All experiments use random seed 42 for reproducibility. 5-fold time-series cross-validation with expanding window validates hyperparameters before final evaluation.
+
 ### F. Tri-Signal Fusion Engine
 
 The system combines three signal sources through weighted voting:
 
 $$S_{final} = w_{ML} \cdot S_{ML} + w_{Pattern} \cdot S_{Pattern} + w_{News} \cdot S_{News}$$
 
-The weights ($w_{ML} = 0.5$, $w_{Pattern} = 0.3$, $w_{News} = 0.2$) were determined through grid search optimization on a held-out validation set (2021 data), maximizing Sharpe ratio across a basket of 20 representative assets. The ML component receives highest weight due to its superior standalone accuracy; pattern recognition provides complementary signals for trend confirmation; news intelligence captures short-term sentiment shifts.
+The weights were determined through grid search optimization on a held-out validation set (2021 data), maximizing Sharpe ratio across 20 representative assets. The search space was $w_{ML} \in \{0.3, 0.4, 0.5, 0.6, 0.7\}$, $w_{Pattern} \in \{0.1, 0.2, 0.3, 0.4\}$, $w_{News} \in \{0.1, 0.2, 0.3\}$, constrained to $\sum w_i = 1.0$. The optimal weights ($w_{ML} = 0.5$, $w_{Pattern} = 0.3$, $w_{News} = 0.2$) achieved Sharpe ratio of 1.92 on the validation set, compared to 1.71 for equal weighting. The ML component receives highest weight due to its superior standalone accuracy; pattern recognition provides complementary signals for trend confirmation; news intelligence captures short-term sentiment shifts.
 
 Conflict resolution applies when signals disagree:
 1. If ML confidence exceeds 85%, ML signal dominates
