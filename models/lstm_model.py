@@ -9,6 +9,22 @@ from typing import Dict, List, Tuple, Optional
 import warnings
 warnings.filterwarnings('ignore')
 
+HAS_TF = False
+tf = None
+_TF_ERROR = None
+Sequential = None
+Model = None
+LSTM = None
+Dense = None
+Dropout = None
+BatchNormalization = None
+Input = None
+Bidirectional = None
+Adam = None
+EarlyStopping = None
+ReduceLROnPlateau = None
+l2 = None
+
 try:
     import tensorflow as tf
     from tensorflow.keras.models import Sequential, Model
@@ -18,8 +34,9 @@ try:
     from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
     from tensorflow.keras.regularizers import l2
     HAS_TF = True
-except ImportError:
+except Exception as e:
     HAS_TF = False
+    _TF_ERROR = str(e)
 
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.metrics import accuracy_score
