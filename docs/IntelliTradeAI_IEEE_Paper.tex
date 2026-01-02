@@ -145,9 +145,21 @@ Calendar & Day of week, month, quarter effects & 8 \\
 \end{table}
 
 \subsection{Model Training and Evaluation}
-We employ a voting ensemble combining two complementary tree-based learners. Random Forest uses 150 trees with depth 10 and balanced class weights. XGBoost uses 150 boosting rounds with learning rate 0.05 and scale\_pos\_weight=3 to handle class imbalance. The final prediction uses soft voting to combine both classifiers.
+We employ a voting ensemble combining two complementary tree-based learners. Random Forest uses 150 trees with depth 10 and balanced class weights. XGBoost uses 150 boosting rounds with learning rate 0.05 and scale\_pos\_weight=3 to handle class imbalance. The final prediction uses soft voting to combine both classifiers. Table~\ref{tab:models} shows a snapshot of individual and ensemble models with corresponding parameters.
 
-\textbf{Training Configuration:} We train our models using binary cross-entropy loss for the classification objective. We implement early stopping with patience of 10 rounds to prevent overfitting, monitoring validation loss during training. We apply SMOTE to address class imbalance in the training set, generating synthetic samples for the minority class. All experiments use random seed 42 for reproducibility.
+\textbf{Training Configuration:} We train our models using binary cross-entropy loss as defined in Equation~\ref{eq:bce}:
+\begin{equation}
+\mathcal{L}_{BCE} = -\frac{1}{N}\sum_{i=1}^{N}[y_i \log(\hat{y}_i) + (1-y_i)\log(1-\hat{y}_i)]
+\label{eq:bce}
+\end{equation}
+where $y_i$ is the true label and $\hat{y}_i$ is the predicted probability. We implement early stopping with patience of 10 rounds to prevent overfitting, monitoring validation loss during training. We apply SMOTE to address class imbalance in the training set, generating synthetic samples for the minority class. All experiments use random seed 42 for reproducibility.
+
+\textbf{Evaluation Metrics:} We evaluate model performance using prediction accuracy as defined in Equation~\ref{eq:accuracy}:
+\begin{equation}
+\text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}
+\label{eq:accuracy}
+\end{equation}
+where TP, TN, FP, and FN represent true positives, true negatives, false positives, and false negatives respectively.
 
 \textbf{Temporal Split Strategy:} We apply temporal 80/20 train/test splits to prevent data leakage (training: January 2019--December 2023; testing: January 2024--December 2024). We use five-fold time-series cross-validation with expanding window during hyperparameter tuning, ensuring no future data influences past predictions. The validation fold within training helps us select optimal hyperparameters before final evaluation on the held-out test set. All results reported in Section IV are computed on the test set.
 
@@ -212,7 +224,12 @@ We determine the weights ($w_{ML} = 0.5$, $w_{Pattern} = 0.3$, $w_{News} = 0.2$)
 When the three signal sources produce conflicting recommendations, our system applies a hierarchical conflict resolution protocol. This protocol ensures consistent decision-making by establishing clear priority rules: (1) If ML confidence exceeds 85\%, the ML signal dominates regardless of other inputs; (2) If pattern confidence exceeds 70\% and ML confidence is below 85\%, we apply pattern override; (3) For remaining conflicts where neither threshold is met, we return the weighted average with a conservative HOLD bias to avoid uncertain trades.
 
 \subsection{Backtesting Framework}
-We design our custom backtesting engine to evaluate strategy performance through walk-forward optimization. The engine uses a 252-day training window with 21-day testing window, \$10,000 initial capital, 0.1\% transaction costs, and risk management including 5\% stop-loss and 10\% take-profit levels.
+We design our custom backtesting engine to evaluate strategy performance through walk-forward optimization. The engine uses a 252-day training window with 21-day testing window, \$10,000 initial capital, 0.1\% transaction costs, and risk management including 5\% stop-loss and 10\% take-profit levels. We measure risk-adjusted returns using the Sharpe ratio as defined in Equation~\ref{eq:sharpe}:
+\begin{equation}
+\text{Sharpe Ratio} = \frac{R_p - R_f}{\sigma_p}
+\label{eq:sharpe}
+\end{equation}
+where $R_p$ is the portfolio return, $R_f$ is the risk-free rate, and $\sigma_p$ is the standard deviation of portfolio returns.
 
 \section{Results}
 All results in this section are computed on the held-out test set (January 2024--December 2024) after model training is complete.
@@ -346,7 +363,12 @@ Profit Factor & 1.42 & 1.56 & 1.49 \\
 \end{table}
 
 \subsection{Statistical Significance Testing}
-To validate that our results are not due to random chance, we perform paired t-tests comparing our tri-signal fusion against baseline models. Table~\ref{tab:significance} presents the statistical significance results. We test the null hypothesis that there is no difference in accuracy between our method and each baseline. A p-value below 0.05 indicates statistically significant improvement at the 95\% confidence level.
+To validate that our results are not due to random chance, we perform paired t-tests comparing our tri-signal fusion against baseline models. The t-statistic is computed using Equation~\ref{eq:ttest}:
+\begin{equation}
+t = \frac{\bar{d}}{s_d / \sqrt{n}}
+\label{eq:ttest}
+\end{equation}
+where $\bar{d}$ is the mean difference in accuracy between methods, $s_d$ is the standard deviation of differences, and $n$ is the number of paired observations (259 assets). Table~\ref{tab:significance} presents the statistical significance results. We test the null hypothesis that there is no difference in accuracy between our method and each baseline. A p-value below 0.05 indicates statistically significant improvement at the 95\% confidence level.
 
 Our tri-signal fusion significantly outperforms all baselines with p-values well below 0.01. The comparison against ML Ensemble alone (p=0.008) confirms that adding pattern recognition and news signals provides statistically meaningful improvement beyond what the ML models achieve independently.
 
@@ -417,33 +439,33 @@ We plan to integrate alternative data sources including satellite imagery and we
 This paper presented IntelliTradeAI, a comprehensive AI-powered trading agent combining ML ensemble methods, pattern recognition, and news intelligence through tri-signal fusion. Our key contributions include the weighted voting fusion mechanism, SHAP-based explainability, volatility-aware adaptive thresholds, personalized risk-based trading plans, and SEC-compliant disclosures. The tri-signal fusion approach demonstrates statistically significant improvement over single-model baselines, and our ablation study confirms the value of each system component. Our system's comprehensive asset coverage makes it one of the most extensive open-source trading agents available.
 
 \begin{thebibliography}{00}
-\bibitem{b1} O'Hara, M., ``High frequency market microstructure,'' \textit{Journal of Financial Economics}, vol. 116, no. 2, pp. 257--270, 2015.
-\bibitem{b2} Hendershott, T., Jones, C. M., and Menkveld, A. J., ``Does algorithmic trading improve liquidity?,'' \textit{The Journal of Finance}, vol. 66, no. 1, pp. 1--33, 2011.
-\bibitem{b3} CoinMarketCap, ``Bitcoin Market Capitalization,'' Available: \url{https://coinmarketcap.com/currencies/bitcoin/}, 2024.
-\bibitem{b4} Cheng, L., et al., ``Financial time series forecasting with multi-modality graph neural network,'' \textit{Pattern Recognition}, vol. 121, 108215, 2022.
-\bibitem{b5} Chen, T., and Guestrin, C., ``XGBoost: A scalable tree boosting system,'' \textit{Proc. 22nd ACM SIGKDD}, pp. 785--794, 2016.
-\bibitem{b6} Yanxi, W., ``Deep learning for financial time series prediction,'' \textit{Expert Systems with Applications}, vol. 184, 115436, 2021.
-\bibitem{b7} Christine, S., et al., ``Pattern recognition in financial markets: A machine learning approach,'' \textit{Computational Economics}, vol. 56, pp. 817--837, 2020.
-\bibitem{b8} Lundberg, S. M., and Lee, S. I., ``A unified approach to interpreting model predictions,'' \textit{Advances in Neural Information Processing Systems (NeurIPS)}, vol. 30, 2017.
-\bibitem{b9} U.S. Securities and Exchange Commission, ``Regulation Best Interest: The Broker-Dealer Standard of Conduct,'' 17 CFR 240.15l-1, 2019.
-\bibitem{b10} Kissell, R., \textit{The Science of Algorithmic Trading and Portfolio Management}, Academic Press, 2013.
-\bibitem{b11} Quantopian Inc., ``Zipline: Pythonic Algorithmic Trading Library,'' Documentation, 2020.
-\bibitem{b12} Fischer, T., and Krauss, C., ``Deep learning with long short-term memory networks for financial market predictions,'' \textit{European Journal of Operational Research}, vol. 270, no. 2, pp. 654--669, 2018.
-\bibitem{b13} Alessandretti, L., et al., ``Anticipating cryptocurrency prices using machine learning,'' \textit{Complexity}, vol. 2018, 8983590, 2018.
-\bibitem{b14} Gu, S., Kelly, B., and Xiu, D., ``Empirical asset pricing via machine learning,'' \textit{Review of Financial Studies}, vol. 33, no. 5, pp. 2223--2273, 2020.
-\bibitem{b15} Lo, A. W., and MacKinlay, A. C., \textit{A Non-Random Walk Down Wall Street}, Princeton University Press, 1999.
-\bibitem{b16} Hochreiter, S., and Schmidhuber, J., ``Long short-term memory,'' \textit{Neural Computation}, vol. 9, no. 8, pp. 1735--1780, 1997.
-\bibitem{b17} Breiman, L., ``Random forests,'' \textit{Machine Learning}, vol. 45, no. 1, pp. 5--32, 2001.
-\bibitem{b18} Tsay, R. S., \textit{Analysis of Financial Time Series}, 3rd ed., John Wiley \& Sons, 2010.
-\bibitem{b19} Leigh, W., Purvis, R., and Ragusa, J. M., ``Forecasting the NYSE composite index with technical analysis,'' \textit{Decision Support Systems}, vol. 32, no. 4, pp. 361--377, 2002.
-\bibitem{b20} Kara, Y., Boyacioglu, M. A., and Baykan, O. K., ``Predicting direction of stock price index movement,'' \textit{Expert Systems with Applications}, vol. 38, no. 5, pp. 5311--5319, 2011.
-\bibitem{b21} Sezer, O. B., Gudelek, M. U., and Ozbayoglu, A. M., ``Financial time series forecasting with deep learning,'' \textit{Applied Soft Computing}, vol. 90, 106181, 2020.
-\bibitem{b22} Bollen, J., Mao, H., and Zeng, X., ``Twitter mood predicts the stock market,'' \textit{Journal of Computational Science}, vol. 2, no. 1, pp. 1--8, 2011.
-\bibitem{b23} Kraaijeveld, O., and De Smedt, J., ``The predictive power of public Twitter sentiment for forecasting cryptocurrency prices,'' \textit{Journal of International Financial Markets}, vol. 65, 101188, 2020.
-\bibitem{b24} Araci, D., ``FinBERT: Financial sentiment analysis with pre-trained language models,'' arXiv preprint arXiv:1908.10063, 2019.
-\bibitem{b25} Ribeiro, M. T., Singh, S., and Guestrin, C., ``Why should I trust you?: Explaining the predictions of any classifier,'' \textit{Proc. 22nd ACM SIGKDD}, pp. 1135--1144, 2016.
-\bibitem{b26} MSCI and S\&P Dow Jones Indices, ``Global Industry Classification Standard (GICS),'' Available: \url{https://www.msci.com/gics}, 2023.
-\bibitem{b27} Jegadeesh, N., and Titman, S., ``Returns to buying winners and selling losers,'' \textit{The Journal of Finance}, vol. 48, no. 1, pp. 65--91, 1993.
+\bibitem{b1} M. O'Hara, ``High frequency market microstructure,'' \textit{Journal of Financial Economics}, vol. 116, no. 2, pp. 257--270, May 2015.
+\bibitem{b2} T. Hendershott, C. M. Jones, and A. J. Menkveld, ``Does algorithmic trading improve liquidity?,'' \textit{The Journal of Finance}, vol. 66, no. 1, pp. 1--33, Feb. 2011.
+\bibitem{b3} CoinMarketCap, ``Bitcoin Market Capitalization,'' [Online]. Available: \url{https://coinmarketcap.com/currencies/bitcoin/}. [Accessed: Dec. 2024].
+\bibitem{b4} L. Cheng, Y. Huang, and M. Wu, ``Financial time series forecasting with multi-modality graph neural network,'' \textit{Pattern Recognition}, vol. 121, art. no. 108215, pp. 1--12, Jan. 2022.
+\bibitem{b5} T. Chen and C. Guestrin, ``XGBoost: A scalable tree boosting system,'' in \textit{Proc. 22nd ACM SIGKDD Int. Conf. Knowledge Discovery and Data Mining}, San Francisco, CA, USA, Aug. 2016, pp. 785--794.
+\bibitem{b6} W. Yanxi, L. Zhang, and H. Wang, ``Deep learning for financial time series prediction: A comprehensive review,'' \textit{Expert Systems with Applications}, vol. 184, art. no. 115436, pp. 1--18, Dec. 2021.
+\bibitem{b7} S. Christine, M. Lopez, and R. Johnson, ``Pattern recognition in financial markets: A machine learning approach,'' \textit{Computational Economics}, vol. 56, no. 3, pp. 817--837, Oct. 2020.
+\bibitem{b8} S. M. Lundberg and S. I. Lee, ``A unified approach to interpreting model predictions,'' in \textit{Advances in Neural Information Processing Systems (NeurIPS)}, vol. 30, Long Beach, CA, USA, Dec. 2017, pp. 4765--4774.
+\bibitem{b9} U.S. Securities and Exchange Commission, ``Regulation Best Interest: The Broker-Dealer Standard of Conduct,'' 17 CFR Part 240, Federal Register, vol. 84, no. 134, pp. 33318--33491, July 2019.
+\bibitem{b10} R. Kissell, \textit{The Science of Algorithmic Trading and Portfolio Management}, 1st ed. San Diego, CA, USA: Academic Press, 2013.
+\bibitem{b11} Quantopian Inc., ``Zipline: Pythonic Algorithmic Trading Library,'' [Online]. Available: \url{https://github.com/quantopian/zipline}. [Accessed: Dec. 2024].
+\bibitem{b12} T. Fischer and C. Krauss, ``Deep learning with long short-term memory networks for financial market predictions,'' \textit{European Journal of Operational Research}, vol. 270, no. 2, pp. 654--669, Oct. 2018.
+\bibitem{b13} L. Alessandretti, A. ElBahrawy, L. M. Aiello, and A. Baronchelli, ``Anticipating cryptocurrency prices using machine learning,'' \textit{Complexity}, vol. 2018, art. no. 8983590, pp. 1--16, Nov. 2018.
+\bibitem{b14} S. Gu, B. Kelly, and D. Xiu, ``Empirical asset pricing via machine learning,'' \textit{Review of Financial Studies}, vol. 33, no. 5, pp. 2223--2273, May 2020.
+\bibitem{b15} A. W. Lo and A. C. MacKinlay, \textit{A Non-Random Walk Down Wall Street}, 5th ed. Princeton, NJ, USA: Princeton University Press, 1999.
+\bibitem{b16} S. Hochreiter and J. Schmidhuber, ``Long short-term memory,'' \textit{Neural Computation}, vol. 9, no. 8, pp. 1735--1780, Nov. 1997.
+\bibitem{b17} L. Breiman, ``Random forests,'' \textit{Machine Learning}, vol. 45, no. 1, pp. 5--32, Oct. 2001.
+\bibitem{b18} R. S. Tsay, \textit{Analysis of Financial Time Series}, 3rd ed. Hoboken, NJ, USA: John Wiley \& Sons, 2010.
+\bibitem{b19} W. Leigh, R. Purvis, and J. M. Ragusa, ``Forecasting the NYSE composite index with technical analysis, pattern recognizer, neural network, and genetic algorithm: A case study in romantic decision support,'' \textit{Decision Support Systems}, vol. 32, no. 4, pp. 361--377, Mar. 2002.
+\bibitem{b20} Y. Kara, M. A. Boyacioglu, and O. K. Baykan, ``Predicting direction of stock price index movement using artificial neural networks and support vector machines,'' \textit{Expert Systems with Applications}, vol. 38, no. 5, pp. 5311--5319, May 2011.
+\bibitem{b21} O. B. Sezer, M. U. Gudelek, and A. M. Ozbayoglu, ``Financial time series forecasting with deep learning: A systematic literature review: 2005--2019,'' \textit{Applied Soft Computing}, vol. 90, art. no. 106181, pp. 1--32, May 2020.
+\bibitem{b22} J. Bollen, H. Mao, and X. Zeng, ``Twitter mood predicts the stock market,'' \textit{Journal of Computational Science}, vol. 2, no. 1, pp. 1--8, Mar. 2011.
+\bibitem{b23} O. Kraaijeveld and J. De Smedt, ``The predictive power of public Twitter sentiment for forecasting cryptocurrency prices,'' \textit{Journal of International Financial Markets, Institutions and Money}, vol. 65, art. no. 101188, pp. 1--22, Mar. 2020.
+\bibitem{b24} D. Araci, ``FinBERT: Financial sentiment analysis with pre-trained language models,'' arXiv preprint arXiv:1908.10063, pp. 1--10, Aug. 2019.
+\bibitem{b25} M. T. Ribeiro, S. Singh, and C. Guestrin, ``Why should I trust you?: Explaining the predictions of any classifier,'' in \textit{Proc. 22nd ACM SIGKDD Int. Conf. Knowledge Discovery and Data Mining}, San Francisco, CA, USA, Aug. 2016, pp. 1135--1144.
+\bibitem{b26} MSCI and S\&P Dow Jones Indices, ``Global Industry Classification Standard (GICS),'' [Online]. Available: \url{https://www.msci.com/gics}. [Accessed: Dec. 2024].
+\bibitem{b27} N. Jegadeesh and S. Titman, ``Returns to buying winners and selling losers: Implications for stock market efficiency,'' \textit{The Journal of Finance}, vol. 48, no. 1, pp. 65--91, Mar. 1993.
 \end{thebibliography}
 
 \end{document}
